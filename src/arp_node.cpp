@@ -229,47 +229,41 @@ int main(int argc, char **argv)
      * SDL_SCANCODE_DOWN = 81,
      * SDL_SCANCODE_UP = 82,
      */
-    if (state[26] || state[4]  || state[22] || state[7] ||
+    up = 0; rotateLeft = 0; forward = 0; left = 0;
+
+    if (state[26] || state[4] || state[22] || state[7] ||
       state[79] || state[80] || state[81] || state[82] ) {
         if (state[SDL_SCANCODE_W]){
-          std::cout << "Moving up... Power " << up*100 << " %  status=" << droneStatus;
-          if (up < 1.0)
-            up += 0.1;
+          std::cout << "Moving up...                       status=" << droneStatus;
+          up = 1.0;
         }
         if (state[SDL_SCANCODE_S]){
-          std::cout << "Moving down... Power " << up*100 << " %  status=" << droneStatus;
-          if (up > -1.0)
-            up -= 0.1;
+          std::cout << "Moving down...                     status=" << droneStatus;
+          up = -1.0;
         }
         if (state[SDL_SCANCODE_A]){
-          std::cout << "Turning Left... Power " << rotateLeft*100 << " %  status=" << droneStatus;
-          if (rotateLeft < 1.0)
-            rotateLeft += 0.1;
+          std::cout << "Turning Left...                    status=" << droneStatus;
+          rotateLeft = 1.0;
         }
         if (state[SDL_SCANCODE_D]){
-          std::cout << "Turning Right... Power " << rotateLeft*100 << " %  status=" << droneStatus;
-          if (rotateLeft > -1.0)
-            rotateLeft -= 0.1;
+          std::cout << "Turning Right...                   status=" << droneStatus;
+          rotateLeft = -1.0;
         }
         if (state[SDL_SCANCODE_UP]){
-          std::cout << "Moving Forward... Power " << forward*100 << " %  status=" << droneStatus;
-          if (forward < 1.0)
-            forward += 0.1;
+          std::cout << "Moving Forward...                  status=" << droneStatus;
+          forward = 1.0;
         }
         if (state[SDL_SCANCODE_DOWN]){
-          std::cout << "Moving Backward... Power " << forward*100 << " %  status=" << droneStatus;
-          if (forward > -1.0)
-            forward -= 0.1;
+          std::cout << "Moving Backward...                 status=" << droneStatus;
+          forward = -1.0;
         }
         if (state[SDL_SCANCODE_LEFT]){
-          std::cout << "Moving Left... Power " << left*100 << " %  status=" << droneStatus;
-          if (left < 1.0)
-            left += 0.1;
+          std::cout << "Moving Left...                     status=" << droneStatus;
+          left = 1.0;
         }
         if (state[SDL_SCANCODE_RIGHT]){
-          std::cout << "Moving Right... Power " << left*100 << " %  status=" << droneStatus;
-          if (left > -1.0)
-            left -= 0.1;
+          std::cout << "Moving Right...                    status=" << droneStatus;
+          left = -1.0;
         }
         bool success = autopilot.manualMove(forward,left,up,rotateLeft);
         if (success) {
@@ -277,15 +271,9 @@ int main(int argc, char **argv)
         } else {
           std::cout << " [FAIL]" << std::endl;
         }
+    } else {
+    	autopilot.manualMove(0.0,0.0,0.0,0.0);
     }
-    // Decay velocity
-    forward    /= 1.1;
-    left       /= 1.1;
-    up         /= 1.1;
-    rotateLeft /= 1.1;
-    // Full stop if decayed enough
-    if (std::abs(forward) < 0.001 && std::abs(left) < 0.001 && std::abs(up) < 0.001 && std::abs(rotateLeft) < 0.001)
-      autopilot.manualMove(0.0,0.0,0.0,0.0);
   }
 
   // make sure to land the drone...
