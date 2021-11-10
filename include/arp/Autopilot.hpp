@@ -48,6 +48,10 @@ class Autopilot {
   /// \return The status.
   DroneStatus droneStatus();
 
+  /// \brief Get the battery status.
+  /// \return Battery percentage.
+  float batteryStatus();
+
   /// \brief Set to automatic control mode.
   void setManual();
 
@@ -104,6 +108,9 @@ class Autopilot {
   ardrone_autonomy::Navdata lastNavdata_; ///< Store navdata as it comes in asynchronously.
   std::mutex navdataMutex_; ///< We need to lock navdata access due to asynchronous arrival.
   ros::Subscriber subNavdata_; ///< The subscriber for navdata.
+  /// Own Code
+  ros::Publisher pubMove_;
+  /// end of Own Code
 };
 
 } // namespace arp
