@@ -165,9 +165,23 @@ template<class DISTORTION_T>
 ProjectionStatus PinholeCamera<DISTORTION_T>::project(
     const Eigen::Vector3d & point, Eigen::Vector2d * imagePoint) const
 {
-  // TODO: implement
-  throw std::runtime_error("not implemented");
-  return ProjectionStatus::Invalid;
+  Eigen::Vector2d projected;
+  projected << (1/point(2)) * point(0), (1/point(2)) * point(1);
+  Eigen::Vector2d distorted;
+  distortion_.distort(projected, &distorted);
+  Eigen::Matrix2d scaling;
+  scaling << fu_, 0, 0, fv_;
+  Eigen::Vector2d centering;
+  centering << cu_, cv_;
+  *imagePoint = scaling * projected + centering;
+
+  if (!CameraBase::isInImage(*imagePoint))
+  {
+    return ProjectionStatus::OutsideImage;
+  }
+  // TODO: Check status: Behind, Invalid
+
+  return ProjectionStatus::Successful;
 }
 
 // Projects a Euclidean point to a 2d image point (projection).
@@ -176,9 +190,29 @@ ProjectionStatus PinholeCamera<DISTORTION_T>::project(
     const Eigen::Vector3d & point, Eigen::Vector2d * imagePoint,
     Eigen::Matrix<double, 2, 3> * pointJacobian) const
 {
-  // TODO: implement
-  throw std::runtime_error("not implemented");
-  return ProjectionStatus::Invalid;
+  Eigen::Vector2d projected;
+  projected << (1/point(2)) * point(0), (1/point(2)) * point(1);
+  Eigen::Vector2d distorted;
+  Eigen::Matrix2d distortionJacobian;
+  distortion_.distort(projected, &distorted, &distortionJacobian);
+  Eigen::Matrix2d scaling;
+  scaling << fu_, 0, 0, fv_;
+  Eigen::Vector2d centering;
+  centering << cu_, cv_;
+  Eigen::Matrix<double, 2, 3> projectionJacobian;
+  projectionJacobian << 1/point(2), 0, -point(0)/(point(2)*point(2)),
+                        0, 1/point(2), -point(1)/(point(2)*point(2));
+
+  *imagePoint = scaling * projected + centering;
+  *pointJacobian = scaling * distortionJacobian * projectionJacobian;
+
+  if (!CameraBase::isInImage(*imagePoint))
+  {
+    return ProjectionStatus::OutsideImage;
+  }
+  // TODO: Check status: Behind, Invalid
+
+  return ProjectionStatus::Successful;
 }
 
 /////////////////////////////////////////
@@ -189,9 +223,18 @@ template<class DISTORTION_T>
 bool PinholeCamera<DISTORTION_T>::backProject(
     const Eigen::Vector2d & imagePoint, Eigen::Vector3d * direction) const
 {
-  // TODO: implement
-  throw std::runtime_error("not implemented");
-  return success;
+  Eigen::Vector2d centering;
+  centering << cu_, cv_;
+  Eigen::Matrix2d rescaling;
+  rescaling << one_over_fu_, 0, 0, one_over_fv_;
+  Eigen::Vector2d distorted = rescaling * (imagePoint - centering);
+  Eigen::Vector2d undistorted;
+  distortion_.undistort(distorted, &undistorted);
+  *direction << undistorted, 1;
+
+  // TODO: maybe not successful?
+
+  return true;
 }
 
 
