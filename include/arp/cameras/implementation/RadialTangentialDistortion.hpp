@@ -77,19 +77,19 @@ bool RadialTangentialDistortion::distort(
   *pointDistorted << preFactor * x1 + 2*p1_*x1*x2 + p2_*(rSquare+2*x1*x1),
                      preFactor * x2 + 2*p2_*x1*x2 + p1_*(rSquare+2*x2*x2);
 
-  // TODO: maybe not successful?
-
   return true;
 }
 bool RadialTangentialDistortion::distort(
     const Eigen::Vector2d & pointUndistorted, Eigen::Vector2d * pointDistorted,
     Eigen::Matrix2d * pointJacobian) const
 {
-  RadialTangentialDistortion::distort(pointUndistorted, pointDistorted);
-
   double x1 = pointUndistorted(0);
   double x2 = pointUndistorted(1);
   double rSquare = x1*x1 + x2*x2;
+  double preFactor = 1 + k1_*rSquare + k2_*rSquare*rSquare;
+
+  *pointDistorted << preFactor * x1 + 2*p1_*x1*x2 + p2_*(rSquare+2*x1*x1),
+                     preFactor * x2 + 2*p2_*x1*x2 + p1_*(rSquare+2*x2*x2);
 
   *pointJacobian << k2_*rSquare*rSquare + 6*p2_*x1 + 2*p1_*x2 +
                       x1*(2*k1_*x1 + 4*k2_*x1*rSquare) + k1_*rSquare + 1,
@@ -97,8 +97,6 @@ bool RadialTangentialDistortion::distort(
                     2*p1_*x1 + 2*p2_*x2 + x2*(2*k1_*x1 + 4*k2_*x1*rSquare),
                     k2_*rSquare*rSquare + 6*p1_*x2 + 2*p2_*x1 +
                       x2*(2*k1_*x2 + 4*k2_*x2*rSquare) + k1_*rSquare + 1;
-
-  // TODO: maybe not successful?
 
   return true;
 }

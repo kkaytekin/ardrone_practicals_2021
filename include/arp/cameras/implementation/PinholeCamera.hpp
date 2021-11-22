@@ -165,22 +165,33 @@ template<class DISTORTION_T>
 ProjectionStatus PinholeCamera<DISTORTION_T>::project(
     const Eigen::Vector3d & point, Eigen::Vector2d * imagePoint) const
 {
+  if (point(2) == 0)
+  {
+    return ProjectionStatus::Invalid;
+  }
+  else if (point(2) < 0)
+  {
+    return ProjectionStatus::Behind;
+  }
+
   Eigen::Vector2d projected;
-  projected << (1/point(2)) * point(0), (1/point(2)) * point(1);
+  projected << point(0)/point(2), point(1)/point(2);
   Eigen::Vector2d distorted;
-  distortion_.distort(projected, &distorted);
+  bool success = distortion_.distort(projected, &distorted);
+  if (!success)
+  {
+    return ProjectionStatus::Invalid;
+  }
   Eigen::Matrix2d scaling;
   scaling << fu_, 0, 0, fv_;
   Eigen::Vector2d centering;
   centering << cu_, cv_;
-  *imagePoint = scaling * projected + centering;
+  *imagePoint = scaling * distorted + centering;
 
   if (!CameraBase::isInImage(*imagePoint))
   {
     return ProjectionStatus::OutsideImage;
   }
-  // TODO: Check status: Behind, Invalid
-
   return ProjectionStatus::Successful;
 }
 
@@ -190,11 +201,24 @@ ProjectionStatus PinholeCamera<DISTORTION_T>::project(
     const Eigen::Vector3d & point, Eigen::Vector2d * imagePoint,
     Eigen::Matrix<double, 2, 3> * pointJacobian) const
 {
+  if (point(2) == 0)
+  {
+    return ProjectionStatus::Invalid;
+  }
+  else if (point(2) < 0)
+  {
+    return ProjectionStatus::Behind;
+  }
+
   Eigen::Vector2d projected;
-  projected << (1/point(2)) * point(0), (1/point(2)) * point(1);
+  projected << point(0)/point(2), point(1)/point(2);
   Eigen::Vector2d distorted;
   Eigen::Matrix2d distortionJacobian;
-  distortion_.distort(projected, &distorted, &distortionJacobian);
+  bool success = distortion_.distort(projected, &distorted, &distortionJacobian);
+  if (!success)
+  {
+    return ProjectionStatus::Invalid;
+  }
   Eigen::Matrix2d scaling;
   scaling << fu_, 0, 0, fv_;
   Eigen::Vector2d centering;
@@ -203,15 +227,13 @@ ProjectionStatus PinholeCamera<DISTORTION_T>::project(
   projectionJacobian << 1/point(2), 0, -point(0)/(point(2)*point(2)),
                         0, 1/point(2), -point(1)/(point(2)*point(2));
 
-  *imagePoint = scaling * projected + centering;
+  *imagePoint = scaling * distorted + centering;
   *pointJacobian = scaling * distortionJacobian * projectionJacobian;
 
   if (!CameraBase::isInImage(*imagePoint))
   {
     return ProjectionStatus::OutsideImage;
   }
-  // TODO: Check status: Behind, Invalid
-
   return ProjectionStatus::Successful;
 }
 
@@ -229,12 +251,9 @@ bool PinholeCamera<DISTORTION_T>::backProject(
   rescaling << one_over_fu_, 0, 0, one_over_fv_;
   Eigen::Vector2d distorted = rescaling * (imagePoint - centering);
   Eigen::Vector2d undistorted;
-  distortion_.undistort(distorted, &undistorted);
+  bool success = distortion_.undistort(distorted, &undistorted);
   *direction << undistorted, 1;
-
-  // TODO: maybe not successful?
-
-  return true;
+  return success;
 }
 
 
