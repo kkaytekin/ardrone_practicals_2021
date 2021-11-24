@@ -106,7 +106,7 @@ int main(int argc, char **argv)
   cv::Mat originalImage;
   cv::Mat undistortImage;
   cv::Mat image;
-  bool distortionStatus = true;
+  bool undistort = false;
   bool undistortSuccess = true;
 
   float forward{0};
@@ -155,12 +155,13 @@ int main(int argc, char **argv)
     if(subscriber.getLastImage(originalImage)) {
 
       // Undistort image optionally
-      if(!distortionStatus) {
+      if(undistort) {
         undistortSuccess = camera.undistortImage(originalImage, undistortImage);
         if(undistortSuccess) {
           image = undistortImage;
         } else {
-          distortionStatus = false;
+          undistort = false;
+          std::cout << "Undistortion failed, showing original image." << std::endl;
           image = originalImage;
         }
       } else {
@@ -169,13 +170,13 @@ int main(int argc, char **argv)
 
       // Print instructions
       cv::putText(image,
-                  "Instructions: T - take off, L - land, ESC - motors off, Arrows - move horizontally",
+                  "Instructions: T - take off, L - land, ESC - motors off, Arrows - move horizontally, W - ascend, S - descend",
                   cv::Point(5,345),
                   cv::FONT_HERSHEY_COMPLEX_SMALL,
                   0.5,
                   cv::Scalar(255,255,255));
       cv::putText(image,
-                  "W - ascend, S - descend, A - yaw left, D - yaw right, I - distort/undistort",
+                  "A - yaw left, D - yaw right, O - original image, U - undistorted image",
                   cv::Point(5,355),
                   cv::FONT_HERSHEY_COMPLEX_SMALL,
                   0.5,
@@ -189,7 +190,7 @@ int main(int argc, char **argv)
                   cv::Scalar(255,255,255),
                   1.5);
       // Print Distortion State
-      std::string distortionStatusString = distortionStatus ? "off" : "on";
+      std::string distortionStatusString = undistort ? "on" : "off";
       cv::putText(image,
                   "Undistortion: " + distortionStatusString,
                   cv::Point(5,40),
@@ -263,9 +264,13 @@ int main(int argc, char **argv)
         std::cout << " [FAIL]" << std::endl;
       }
     }
-    if (state[SDL_SCANCODE_I]) {
-      std::cout << "Switching distortion mode...           status=" << droneStatus;
-      distortionStatus = !distortionStatus;
+    if (state[SDL_SCANCODE_U]) {
+      std::cout << "Showing undistorted image...           status=" << droneStatus << std::endl;
+      undistort = true;
+    }
+    if (state[SDL_SCANCODE_O]) {
+      std::cout << "Showing original image...              status=" << droneStatus << std::endl;
+      undistort = false;
     }
 
     // TODO: process moving commands when in state 3,4, or 7
