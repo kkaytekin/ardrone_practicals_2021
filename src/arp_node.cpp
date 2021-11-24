@@ -17,6 +17,8 @@
 #include <std_srvs/Empty.h>
 
 #include <arp/Autopilot.hpp>
+#include <arp/cameras/PinholeCamera.hpp>
+#include <arp/cameras/RadialTangentialDistortion.hpp>
 
 class Subscriber
 {
@@ -79,16 +81,39 @@ int main(int argc, char **argv)
   SDL_RenderPresent(renderer);
   SDL_Texture * texture;
 
+  // get configs
+  double fu, fv, cu, cv, k1, k2, p1, p2;
+  nh.getParam("/arp_node/fu", fu);
+  nh.getParam("/arp_node/fv", fv);
+  nh.getParam("/arp_node/cu", cu);
+  nh.getParam("/arp_node/cv", cv);
+  nh.getParam("/arp_node/k1", k1);
+  nh.getParam("/arp_node/k2", k2);
+  nh.getParam("/arp_node/p1", p1);
+  nh.getParam("/arp_node/p2", p2);
+
+  // init camera and distortion model
+  arp::cameras::RadialTangentialDistortion distortion =
+      arp::cameras::RadialTangentialDistortion(k1, k2, p1, p2);
+  arp::cameras::PinholeCamera<arp::cameras::RadialTangentialDistortion> camera =
+      arp::cameras::PinholeCamera<arp::cameras::RadialTangentialDistortion>(
+          640, 360, fu, fv, cu, cv, distortion);
+  camera.initialiseUndistortMaps();
+
   // enter main event loop
   std::cout << "===== Hello AR Drone ====" << std::endl;
+
+  cv::Mat originalImage;
+  cv::Mat undistortImage;
   cv::Mat image;
-  /// OWN CODE
+  bool undistort = false;
+  bool undistortSuccess = true;
+
   float forward{0};
   float left{0};
   float up{0};
   float rotateLeft{0};
   std::string droneStatusString;
-  /// END OF OWN CODE
 
   while (ros::ok()) {
     ros::spinOnce();
@@ -127,18 +152,31 @@ int main(int argc, char **argv)
     auto batteryStatus = autopilot.batteryStatus();
 
     // render image, if there is a new one available
-    if(subscriber.getLastImage(image)) {
+    if(subscriber.getLastImage(originalImage)) {
 
-      // TODO: add overlays to the cv::Mat image, e.g. text
+      // Undistort image optionally
+      if(undistort) {
+        undistortSuccess = camera.undistortImage(originalImage, undistortImage);
+        if(undistortSuccess) {
+          image = undistortImage;
+        } else {
+          undistort = false;
+          std::cout << "Undistortion failed, showing original image." << std::endl;
+          image = originalImage;
+        }
+      } else {
+        image = originalImage;
+      }
+
       // Print instructions
       cv::putText(image,
-                  "Instructions: T - take off, L - land, ESC - motors off, Arrows - move horizontally",
+                  "Instructions: T - take off, L - land, ESC - motors off, Arrows - move horizontally, W - ascend, S - descend",
                   cv::Point(5,345),
                   cv::FONT_HERSHEY_COMPLEX_SMALL,
                   0.5,
                   cv::Scalar(255,255,255));
       cv::putText(image,
-                  "W - ascend, S - descend, A - yaw left, D - yaw right",
+                  "A - yaw left, D - yaw right, O - original image, U - undistorted image",
                   cv::Point(5,355),
                   cv::FONT_HERSHEY_COMPLEX_SMALL,
                   0.5,
@@ -151,10 +189,19 @@ int main(int argc, char **argv)
                   1,
                   cv::Scalar(255,255,255),
                   1.5);
+      // Print Distortion State
+      std::string distortionStatusString = undistort ? "on" : "off";
+      cv::putText(image,
+                  "Undistortion: " + distortionStatusString,
+                  cv::Point(5,40),
+                  cv::FONT_HERSHEY_COMPLEX_SMALL,
+                  1,
+                  cv::Scalar(255,255,255),
+                  1.5);
       // Print Battery State
       cv::putText(image,
                   "Battery: " + std::to_string(static_cast<int>(batteryStatus)) + "%",
-                  cv::Point(5,40),
+                  cv::Point(4,60),
                   cv::FONT_HERSHEY_COMPLEX_SMALL,
                   1,
                   cv::Scalar(255,255,255),
@@ -217,6 +264,14 @@ int main(int argc, char **argv)
         std::cout << " [FAIL]" << std::endl;
       }
     }
+    if (state[SDL_SCANCODE_U]) {
+      std::cout << "Showing undistorted image...           status=" << droneStatus << std::endl;
+      undistort = true;
+    }
+    if (state[SDL_SCANCODE_O]) {
+      std::cout << "Showing original image...              status=" << droneStatus << std::endl;
+      undistort = false;
+    }
 
     // TODO: process moving commands when in state 3,4, or 7
     /*
@@ -234,35 +289,35 @@ int main(int argc, char **argv)
     if (state[26] || state[4] || state[22] || state[7] ||
       state[79] || state[80] || state[81] || state[82] ) {
         if (state[SDL_SCANCODE_W]){
-          std::cout << "Moving up...                       status=" << droneStatus;
+          std::cout << "Moving up...                           status=" << droneStatus;
           up = 1.0;
         }
         if (state[SDL_SCANCODE_S]){
-          std::cout << "Moving down...                     status=" << droneStatus;
+          std::cout << "Moving down...                         status=" << droneStatus;
           up = -1.0;
         }
         if (state[SDL_SCANCODE_A]){
-          std::cout << "Turning Left...                    status=" << droneStatus;
+          std::cout << "Turning Left...                        status=" << droneStatus;
           rotateLeft = 1.0;
         }
         if (state[SDL_SCANCODE_D]){
-          std::cout << "Turning Right...                   status=" << droneStatus;
+          std::cout << "Turning Right...                       status=" << droneStatus;
           rotateLeft = -1.0;
         }
         if (state[SDL_SCANCODE_UP]){
-          std::cout << "Moving Forward...                  status=" << droneStatus;
+          std::cout << "Moving Forward...                      status=" << droneStatus;
           forward = 1.0;
         }
         if (state[SDL_SCANCODE_DOWN]){
-          std::cout << "Moving Backward...                 status=" << droneStatus;
+          std::cout << "Moving Backward...                     status=" << droneStatus;
           forward = -1.0;
         }
         if (state[SDL_SCANCODE_LEFT]){
-          std::cout << "Moving Left...                     status=" << droneStatus;
+          std::cout << "Moving Left...                         status=" << droneStatus;
           left = 1.0;
         }
         if (state[SDL_SCANCODE_RIGHT]){
-          std::cout << "Moving Right...                    status=" << droneStatus;
+          std::cout << "Moving Right...                        status=" << droneStatus;
           left = -1.0;
         }
         bool success = autopilot.manualMove(forward,left,up,rotateLeft);
