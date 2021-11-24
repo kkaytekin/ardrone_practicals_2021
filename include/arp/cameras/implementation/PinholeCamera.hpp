@@ -126,7 +126,6 @@ bool PinholeCamera<DISTORTION_T>::initialiseUndistortMaps(
       // Assign that pixel location to the map
       pmap_x[x] = mappedPixel(0); // assign a value to the (x,y) position in the map
       pmap_y[x] = mappedPixel(1);
-
     }
   }
 
