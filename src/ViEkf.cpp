@@ -173,15 +173,26 @@ bool ViEkf::predict(uint64_t from_timestampMicroseconds,
     // get the time delta
     const double delta_t = double(z_k.timestampMicroseconds - z_k_minus_1.timestampMicroseconds) * 1.0e-6;
 
-    // TODO: propagate robot state x_ using IMU measurements
-    // i.e. we do x_k = f(x_k_minus_1).
-    // Also, we compute the matrix F (linearisation of f()) related to
-    // delta_chi_k = F * delta_chi_k_minus_1.
+    // propagate robot state x_ using IMU measurements and
+    // compute Jacobian F: delta_chi_k = F * delta_chi_k_minus_1
+    kinematics::ImuKinematicsJacobian F;
+    kinematics::Imu::stateTransition(x_, z_k_minus_1, z_k, x_, &F);
 
-    // TODO: propagate covariance matrix P_
-
+    // propagate covariance matrix P_
+    double diag1 = delta_t * sigma_c_gyr_ * sigma_c_gyr_;
+    double diag2 = delta_t * sigma_c_acc_ * sigma_c_acc_;
+    double diag3 = delta_t * sigma_c_gw_ * sigma_c_gw_;
+    double diag4 = delta_t * sigma_c_aw_ * sigma_c_aw_;
+    Eigen::Matrix<double, 15, 1> noiseVector;
+    noiseVector << 0, 0, 0,
+                   diag1, diag1, diag1,
+                   diag2, diag2, diag2,
+                   diag3, diag3, diag3,
+                   diag4, diag4, diag4;
+    Eigen::Matrix<double, 15, 15> noise = noiseVector.asDiagonal();
+    P_ = F * P_ * F.transpose() + noise;
   }
-  return false;  // TODO: change to true once implemented
+  return true;
 }
 
 // Pass a set of keypoint measurements to trigger an update.
