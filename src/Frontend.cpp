@@ -5,6 +5,7 @@
  *      Author: sleutene
  */
 
+#include <algorithm>
 #include <iostream>
 #include <fstream>
 #include <sstream>
@@ -137,7 +138,7 @@ bool Frontend::ransac(const std::vector<cv::Point3d>& worldPoints,
     return false;
   }
   if(worldPoints.size()<5) {
-    return false; // not realiabl enough
+    return false; // not reliable enough
   }
 
   inliers.clear();
@@ -176,7 +177,11 @@ bool Frontend::detectAndMatch(const cv::Mat& image, const Eigen::Vector3d & extr
   cv::Mat descriptors;
   detectAndDescribe(grayScale, extractionDirection, keypoints, descriptors);
 
-  // TODO match to map:
+  std::vector<cv::Point3d> worldPoints;
+  std::vector<cv::Point2d> imagePoints;
+  DetectionVec preliminaryDetections;
+
+  // match to map
   for(size_t k = 0; k < keypoints.size(); ++k) { // go through all keypoints in the frame
     bool matched = false;
     uchar* keypointDescriptor = descriptors.data + k*48; // descriptors are 48 bytes long
@@ -184,19 +189,55 @@ bool Frontend::detectAndMatch(const cv::Mat& image, const Eigen::Vector3d & extr
       for(auto lmDescriptor : lm.second.descriptors) { // check agains all available descriptors
         const float dist = brisk::Hamming::PopcntofXORed(
                 keypointDescriptor, lmDescriptor.data, 3); // compute desc. distance: 3 for 3x128bit (=48 bytes)
-        // TODO check if a match and process accordingly
+        // check if a match and process accordingly
+        if(dist < 60) {
+          Eigen::Vector2d keypoint(keypoints[k].pt.x, keypoints[k].pt.y);
+          Detection detection;
+          detection.keypoint = keypoint;
+          imagePoints.push_back(keypoints[k].pt);
+          detection.landmark = lm.second.point;
+          cv::Point3d worldPoint(lm.second.point.x(), lm.second.point.y(), lm.second.point.z());
+          worldPoints.push_back(worldPoint);
+          detection.landmarkId = lm.first;
+          preliminaryDetections.push_back(detection);
+        }
       }
     }
   }
 
-  // TODO run RANSAC (to remove outliers and get pose T_CW estimate)
+  // run RANSAC (to remove outliers and get pose T_CW estimate)
+  std::vector<int> inliers;
+  bool ransacSuccess = ransac(worldPoints, imagePoints, T_CW, inliers);
 
-  // TODO set detections
+  // set detections
+  std::transform(
+      inliers.begin(),
+      inliers.end(),
+      detections.begin(),
+      [preliminaryDetections](size_t pos) {
+        return preliminaryDetections[pos];
+      }
+  );
 
-  // TODO visualise by painting stuff into visualisationImage
-  
-  return false; // TODO return true if successful...
+  // visualise by painting stuff into visualisationImage
+  for (size_t k = 0; k < imagePoints.size(); ++k) {
+    cv::Scalar color;
+    if (std::find(inliers.begin(), inliers.end(), k) != inliers.end()) {
+      color << 0, 255, 0;
+    } else {
+      color << 0, 0, 255;
+    }
+    cv::circle(visualisationImage, imagePoints[k], 3, color);
+  }
+  for (Detection detection : detections) {
+    Eigen::Vector2d projectedWorldPoint;
+    camera_.project(detection.landmark, &projectedWorldPoint);
+    cv::Point2d point(projectedWorldPoint.x(), projectedWorldPoint.y());
+    cv::Scalar color(255, 0, 0);
+    cv::circle(visualisationImage, point, 3, color);
+  }
+
+  return ransacSuccess;
 }
 
 }  // namespace arp
-
