@@ -26,6 +26,13 @@ struct ImuMeasurement {
   Eigen::Vector3d acc_S; ///< The accelerometer reading a_tilde_S [rm/s^2/s].
 };
 
+inline std::ostream& operator<< (std::ostream &out, ImuMeasurement const& data) {
+    out << "Imu omega_z: " << data.omega_S.z();
+    out << "   Imu time: " << data.timestampMicroseconds;
+    out << "  Imu acc_z: " << data.acc_S.x();
+    return out;
+}
+
 class Imu
 {
  public:

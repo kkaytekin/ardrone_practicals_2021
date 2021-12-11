@@ -74,7 +74,7 @@ class VisualInertialTracker
   /// \brief Enable/disable fusion
   void enableFusion(bool enable) {fusionEnabled_ = enable;}
 
- protected:
+ //protected:
 
   /// \brief This runs in a separate thread, synchronising and then calling
   ///        frontend and estimator functions.
@@ -107,8 +107,10 @@ class VisualInertialTracker
   threadsafe::ThreadSafeQueue<CameraMeasurement> cameraMeasurementQueue_;
   threadsafe::ThreadSafeQueue<CameraMeasurement> cameraVisualisationQueue_;
 
-  threadsafe::ThreadSafeQueue<StateEstimate, Eigen::aligned_allocator<StateEstimate>> controllerQueue_;
-  threadsafe::ThreadSafeQueue<StateEstimate, Eigen::aligned_allocator<StateEstimate>> visualisationQueue_;
+  threadsafe::ThreadSafeQueue<StateEstimate,
+      Eigen::aligned_allocator<StateEstimate>> controllerQueue_;
+  threadsafe::ThreadSafeQueue<StateEstimate,
+      Eigen::aligned_allocator<StateEstimate>> visualisationQueue_;
 
   EstimatorCallback controllerCallback_;
   EstimatorCallback visualisationCallback_;

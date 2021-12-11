@@ -58,7 +58,6 @@ class Subscriber
   {
     uint64_t timeMicroseconds = uint64_t(msg->header.stamp.sec) * 1000000ll
         + msg->header.stamp.nsec / 1000;
-
     const Eigen::Vector3d angularVelocity(
         msg->angular_velocity.x,
         msg->angular_velocity.y,
@@ -69,13 +68,14 @@ class Subscriber
         msg->linear_acceleration.y,
         msg->linear_acceleration.z
     );
-    // TODO fix this
-    //tracker_->addImuMeasurement(timeMicroseconds, angularVelocity, acceleration);
+    std::lock_guard<std::mutex> l(imuMutex_);  // needed?
+    tracker_->addImuMeasurement(timeMicroseconds, angularVelocity, acceleration);
   }
 
  private:
   cv::Mat lastImage_;
   std::mutex imageMutex_;
+  std::mutex imuMutex_;
   arp::VisualInertialTracker* tracker_;
 };
 
@@ -151,6 +151,14 @@ int main(int argc, char **argv)
   arp::VisualInertialTracker visualInertialTracker;
   visualInertialTracker.setFrontend(frontend);
   visualInertialTracker.setEstimator(viEkf);
+
+  // set up visualisation: publish poses to topic ardrone/vi_ekf_pose
+  visualInertialTracker.setVisualisationCallback(std::bind(
+      &arp::StatePublisher::publish,
+      &pubState,
+      std::placeholders::_1,
+      std::placeholders::_2
+  ));
 
   // setup inputs
   Subscriber subscriber(&visualInertialTracker);
