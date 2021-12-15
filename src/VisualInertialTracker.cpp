@@ -45,7 +45,6 @@ void VisualInertialTracker::addImuMeasurement(uint64_t timestampMicroseconds,
   imuMeasurement.timestampMicroseconds = timestampMicroseconds;
   imuMeasurement.omega_S = omega_S;
   imuMeasurement.acc_S = acc_S;
-  std::cout << "imu measurement queue size: " << imuMeasurementQueue_.Size() << std::endl;
   imuMeasurementQueue_.PushNonBlocking(imuMeasurement);
 }
 
@@ -167,7 +166,7 @@ void VisualInertialTracker::visualisationLoop()
   for (;;) {
     // get estimator output
     StateEstimate stateEstimate;
-        if (!visualisationQueue_.PopBlocking(&stateEstimate)) {
+    if (!visualisationQueue_.PopBlocking(&stateEstimate)) {
       return;
     } else {
       if (visualisationCallback_) {
@@ -184,10 +183,4 @@ bool VisualInertialTracker::getLastVisualisationImage(cv::Mat & visualisationIma
   return success;
 }
 
-inline std::ostream& operator<< (std::ostream &out, VisualInertialTracker::StateEstimate const& data) {
-    out << "StateEstimator: " << data.timestampMicroseconds;
-    return out;
-}
-
 }  // namespace arp
-

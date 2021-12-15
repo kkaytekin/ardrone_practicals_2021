@@ -68,14 +68,12 @@ class Subscriber
         msg->linear_acceleration.y,
         msg->linear_acceleration.z
     );
-    std::lock_guard<std::mutex> l(imuMutex_);  // needed?
     tracker_->addImuMeasurement(timeMicroseconds, angularVelocity, acceleration);
   }
 
  private:
   cv::Mat lastImage_;
   std::mutex imageMutex_;
-  std::mutex imuMutex_;
   arp::VisualInertialTracker* tracker_;
 };
 
@@ -219,7 +217,7 @@ int main(int argc, char **argv)
     auto batteryStatus = autopilot.batteryStatus();
 
     // render image, if there is a new one available
-    if(subscriber.getLastImage(originalImage)) {
+    if(visualInertialTracker.getLastVisualisationImage(originalImage)) {  // subscriber.getLastImage(originalImage
 
       // Undistort image optionally
       if(undistort) {

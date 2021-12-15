@@ -122,7 +122,6 @@ class ThreadSafeQueue {
   /// \brief Push to the queue.
   void PushNonBlocking(const QueueType& value) {
     pthread_mutex_lock(&mutex_);
-    std::cout << value << std::endl;
     queue_.push(value);
     pthread_cond_signal(&condition_empty_);  // Signal that data is available.
     pthread_mutex_unlock(&mutex_);

@@ -210,14 +210,9 @@ bool Frontend::detectAndMatch(const cv::Mat& image, const Eigen::Vector3d & extr
   bool ransacSuccess = ransac(worldPoints, imagePoints, T_CW, inliers);
 
   // set detections
-  std::transform(
-      inliers.begin(),
-      inliers.end(),
-      detections.begin(),
-      [preliminaryDetections](size_t pos) {
-        return preliminaryDetections[pos];
-      }
-  );
+  for (size_t k = 0; k < inliers.size(); ++k) {
+    detections.push_back(preliminaryDetections[inliers[k]]);
+  }
 
   // visualise by painting stuff into visualisationImage
   for (size_t k = 0; k < imagePoints.size(); ++k) {

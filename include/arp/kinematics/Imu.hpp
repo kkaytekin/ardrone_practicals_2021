@@ -28,8 +28,8 @@ struct ImuMeasurement {
 
 inline std::ostream& operator<< (std::ostream &out, ImuMeasurement const& data) {
     out << "Imu omega_z: " << data.omega_S.z();
-    out << "   Imu time: " << data.timestampMicroseconds;
-    out << "  Imu acc_z: " << data.acc_S.x();
+    out << "  Imu time: " << data.timestampMicroseconds;
+    out << "  Imu acc_x: " << data.acc_S.x();
     return out;
 }
 

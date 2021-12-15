@@ -74,7 +74,7 @@ class VisualInertialTracker
   /// \brief Enable/disable fusion
   void enableFusion(bool enable) {fusionEnabled_ = enable;}
 
- //protected:
+ protected:
 
   /// \brief This runs in a separate thread, synchronising and then calling
   ///        frontend and estimator functions.

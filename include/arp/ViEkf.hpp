@@ -85,7 +85,7 @@ class ViEkf
   bool addKeypointMeasurements(uint64_t timestampMicroseconds,
               const DetectionVec & detectionVec);
 
- //protected:
+ protected:
 
   /// \brief The EKF prediction.
   /// \param[in] from_timestampMicroseconds The time to predict from.
