@@ -218,18 +218,18 @@ bool Frontend::detectAndMatch(const cv::Mat& image, const Eigen::Vector3d & extr
   for (size_t k = 0; k < imagePoints.size(); ++k) {
     cv::Scalar color;
     if (std::find(inliers.begin(), inliers.end(), k) != inliers.end()) {
-      color << 0, 255, 0;
+      color << 0, 255, 0;  // green
     } else {
-      color << 0, 0, 255;
+      color << 0, 0, 255;  // red
     }
-    cv::circle(visualisationImage, imagePoints[k], 3, color);
+    cv::circle(visualisationImage, imagePoints[k], 5, color);
   }
   for (Detection detection : detections) {
     Eigen::Vector2d projectedWorldPoint;
     camera_.project(detection.landmark, &projectedWorldPoint);
     cv::Point2d point(projectedWorldPoint.x(), projectedWorldPoint.y());
-    cv::Scalar color(255, 0, 0);
-    cv::circle(visualisationImage, point, 3, color);
+    cv::Scalar color(255, 0, 0);  // blue
+    cv::circle(visualisationImage, point, 5, color);
   }
 
   return ransacSuccess;
