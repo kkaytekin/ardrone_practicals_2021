@@ -182,10 +182,14 @@ bool Frontend::detectAndMatch(const cv::Mat& image, const Eigen::Vector3d & extr
   DetectionVec preliminaryDetections;
 
   // match to map
-  for(size_t k = 0; k < keypoints.size(); ++k) { // go through all keypoints in the frame
-    bool matched = false;
-    uchar* keypointDescriptor = descriptors.data + k*48; // descriptors are 48 bytes long
-    for(auto & lm : landmarks_) { // go through all landmarks in the map
+  for(auto & lm : landmarks_) { // go through all landmarks in the map
+    Eigen::Vector2d dummy;
+    if(camera_.project(lm.second.point, &dummy) != cameras::ProjectionStatus::Successful) {
+      continue;
+    }
+    for(size_t k = 0; k < keypoints.size(); ++k) { // go through all keypoints in the frame
+      uchar* keypointDescriptor = descriptors.data + k*48; // descriptors are 48 bytes long
+      bool matched = false;
       for(auto lmDescriptor : lm.second.descriptors) { // check agains all available descriptors
         const float dist = brisk::Hamming::PopcntofXORed(
                 keypointDescriptor, lmDescriptor.data, 3); // compute desc. distance: 3 for 3x128bit (=48 bytes)
@@ -226,7 +230,8 @@ bool Frontend::detectAndMatch(const cv::Mat& image, const Eigen::Vector3d & extr
   }
   for (Detection detection : detections) {
     Eigen::Vector2d projectedWorldPoint;
-    camera_.project(detection.landmark, &projectedWorldPoint);
+    Eigen::Vector3d landmark_hom(detection.landmark.x(), detection.landmark.y(), detection.landmark.z(), 1);
+    camera_.project(T_CW * landmark_hom, &projectedWorldPoint);
     cv::Point2d point(projectedWorldPoint.x(), projectedWorldPoint.y());
     cv::Scalar color(255, 0, 0);  // blue
     cv::circle(visualisationImage, point, 5, color);
