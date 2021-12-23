@@ -180,16 +180,28 @@ bool Frontend::detectAndMatch(const cv::Mat& image, const Eigen::Vector3d & extr
   std::vector<cv::Point3d> worldPoints;
   std::vector<cv::Point2d> imagePoints;
   DetectionVec preliminaryDetections;
+  std::vector<cv::Point2d> visibleLandmarks;
 
   // match to map
   for(auto & lm : landmarks_) { // go through all landmarks in the map
-    Eigen::Vector2d dummy;
-    if(camera_.project(lm.second.point, &dummy) != cameras::ProjectionStatus::Successful) {
-      continue;
+    // efficient matching: check if landmark is visible in the image
+    if (!needsReInitialisation) {
+      Eigen::Vector4d lm_hom;
+      lm_hom << lm.second.point, 1;
+      Eigen::Vector4d lm_cam_hom = T_CW * lm_hom;
+      Eigen::Vector3d lm_cam(lm_cam_hom.x(), lm_cam_hom.y(), lm_cam_hom.z());
+      Eigen::Vector2d lm_projected;
+      cameras::ProjectionStatus status = camera_.project(lm_cam, &lm_projected);
+      if (status != cameras::ProjectionStatus::Successful) {
+        continue;
+      } else {
+        cv::Point2d visibleLandmark(lm_projected.x(), lm_projected.y());
+        visibleLandmarks.push_back(visibleLandmark);
+      }
     }
+    // try to match landmark to all the keypoints
     for(size_t k = 0; k < keypoints.size(); ++k) { // go through all keypoints in the frame
       uchar* keypointDescriptor = descriptors.data + k*48; // descriptors are 48 bytes long
-      bool matched = false;
       for(auto lmDescriptor : lm.second.descriptors) { // check agains all available descriptors
         const float dist = brisk::Hamming::PopcntofXORed(
                 keypointDescriptor, lmDescriptor.data, 3); // compute desc. distance: 3 for 3x128bit (=48 bytes)
@@ -222,19 +234,15 @@ bool Frontend::detectAndMatch(const cv::Mat& image, const Eigen::Vector3d & extr
   for (size_t k = 0; k < imagePoints.size(); ++k) {
     cv::Scalar color;
     if (std::find(inliers.begin(), inliers.end(), k) != inliers.end()) {
-      color << 0, 255, 0;  // green
+      color << 0, 255, 0;  // green: matched keypoints
     } else {
-      color << 0, 0, 255;  // red
+      color << 0, 0, 255;  // red: keypoints that could not be matched
     }
     cv::circle(visualisationImage, imagePoints[k], 5, color);
   }
-  for (Detection detection : detections) {
-    Eigen::Vector2d projectedWorldPoint;
-    Eigen::Vector3d landmark_hom(detection.landmark.x(), detection.landmark.y(), detection.landmark.z(), 1);
-    camera_.project(T_CW * landmark_hom, &projectedWorldPoint);
-    cv::Point2d point(projectedWorldPoint.x(), projectedWorldPoint.y());
-    cv::Scalar color(255, 0, 0);  // blue
-    cv::circle(visualisationImage, point, 5, color);
+  for (cv::Point2d visibleLandmark : visibleLandmarks) {
+    cv::Scalar color(255, 0, 0);  // blue: visible landmarks
+    cv::circle(visualisationImage, visibleLandmark, 5, color);
   }
 
   return ransacSuccess;
