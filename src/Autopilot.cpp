@@ -186,5 +186,11 @@ void Autopilot::controllerCallback(uint64_t timeMicroseconds,
 
 }
 
+// Print reference values for debugging
+void Autopilot::printRefVals(){
+    std::cout << "X , Y , Z , yaw: " << ref_x_ << ' ' << ref_y_ << ' ' << ref_z_ << ' '
+            << ref_yaw_ << '\n';
+}
+
 }  // namespace arp
 

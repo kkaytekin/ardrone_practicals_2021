@@ -25,6 +25,9 @@
 #include <arp/ViEkf.hpp>
 #include <arp/VisualInertialTracker.hpp>
 
+//Sheet 4
+#include <arp/InteractiveMarkerServer.hpp>
+
 class Subscriber
 {
  public:
@@ -165,6 +168,9 @@ int main(int argc, char **argv)
   ros::Subscriber subImu = nh.subscribe(
       "ardrone/imu", 50, &Subscriber::imuCallback, &subscriber);
 
+  // interactive marker for pose control
+  arp::InteractiveMarkerServer marker(autopilot);
+  marker.activate(0.0,0.0,0.0,0.0);
   // enter main event loop
   std::cout << "===== Hello AR Drone ====" << std::endl;
 
@@ -215,6 +221,9 @@ int main(int argc, char **argv)
         droneStatusString = "Unknown"; break;
     }
     auto batteryStatus = autopilot.batteryStatus();
+
+    //debug commands
+    //autopilot.printRefVals();
 
     // render image, if there is a new one available
     if(visualInertialTracker.getLastVisualisationImage(originalImage)) {  // subscriber.getLastImage(originalImage

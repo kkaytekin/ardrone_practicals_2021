@@ -114,6 +114,9 @@ class Autopilot {
   void controllerCallback(uint64_t timeMicroseconds,
                           const arp::kinematics::RobotState& x);
 
+  /// \brief Print reference values for debugging
+  void printRefVals();
+
  protected:
   /// \brief Move the drone.
   /// @param[in] forward Forward tilt [-1,...,1] scaling the maximum tilt ROS parameter.
