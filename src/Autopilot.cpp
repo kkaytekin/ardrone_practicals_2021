@@ -28,6 +28,22 @@ Autopilot::Autopilot(ros::NodeHandle& nh)
   // flattrim service
   srvFlattrim_ = nh_->serviceClient<std_srvs::Empty>(
       nh_->resolveName("ardrone/flattrim"), 1);
+
+  // Set PID parameters
+  // TODO: Ask - compact way to do this? couldn't pass into function directly.
+  // Doesnt work: PidController::Parameters p{1.0,2.0,3.0};
+  // Doesnt work: PidController::Parameters p = {1.0,2.0,3.0};
+
+  PidController::Parameters p;
+
+  p.k_p=0.2; p.k_i=0.0; p.k_d=0.0;
+  rollAngPid.setParameters(p);
+  p.k_p=0.2; p.k_i=0.0; p.k_d=0.0;
+  pitchAngPid.setParameters(p);
+  p.k_p=1.0; p.k_i=0.0; p.k_d=0.0;
+  yawPid.setParameters(p);
+  p.k_p=0.4; p.k_i=0.0; p.k_d=0.0;
+  zPid.setParameters(p);
 }
 
 void Autopilot::navdataCallback(const ardrone_autonomy::NavdataConstPtr& msg)
@@ -169,23 +185,42 @@ void Autopilot::controllerCallback(uint64_t timeMicroseconds,
                                   const arp::kinematics::RobotState& x)
 {
   // only do anything here, if automatic
+  const double yaw = kinematics::yawAngle(x.q_WS);
   if (!isAutomatic_) {
     // keep resetting this to make sure we use the current state as reference as soon as sent to automatic mode
-    const double yaw = kinematics::yawAngle(x.q_WS);
     setPoseReference(x.t_WS[0], x.t_WS[1], x.t_WS[2], yaw);
     return;
   }
 
   // TODO: only enable when in flight
-
+  DroneStatus status = droneStatus();
+  // TODO: Ask - do we also consider DroneStatus::Flying2?
+  if (status != DroneStatus::Flying) {
+    return;
+  }
+  // Calculate error
+  kinematics::Transformation T_WS(x.t_WS, x.q_WS);
+  Eigen::Matrix3d R_SW = T_WS.R().transpose();
+  Eigen::Vector3d posRef;
+  posRef << ref_x_, ref_y_ , ref_z_;
+  Eigen::Vector3d posError = R_SW * (posRef - x.t_WS);
+  double yawError = (ref_yaw_ - yaw);
+  // Ensure yawError \in [-pi,pi]
+  yawError = std::fmod(yawError + M_PI , 2*M_PI);
+  if (yawError < 0.0) yawError += 2*M_PI;
+  yawError -= M_PI;
+  // Calculate error derivatives
+  Eigen::Vector3d dPosError = - R_SW * x.v_W;
+  double dYawError = 0.0;
   // TODO: get ros parameter
-
+  // Task 2.3: Set limits for controller output
   // TODO: compute control output
 
   // TODO: send to move
 
 }
 
+// Some functions for debugging
 // Print reference values for debugging
 void Autopilot::printRefVals(){
     std::cout << "X , Y , Z , yaw: " << ref_x_ << ' ' << ref_y_ << ' ' << ref_z_ << ' '

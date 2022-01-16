@@ -24,6 +24,9 @@
 
 #include <arp/kinematics/Imu.hpp>
 
+//Sheet 4
+#include <arp/PidController.hpp>
+
 namespace arp {
 
 /// \brief The autopilot highlevel interface for commanding the drone manually or automatically.
@@ -149,6 +152,13 @@ class Autopilot {
   double ref_yaw_ = 0.0; ///< World frame yaw reference [rad].
   std::mutex refMutex_; ///< We need to lock the reference access due to asynchronous arrival.
   std::atomic<bool> isAutomatic_; ///< True, if in automatic control mode.
+  // Store PID's.
+  // TODO: Any tips for better ways to store PID's? I tried using a struct but it seemed more messy.
+  PidController rollAngPid; // roll angle pid
+  PidController pitchAngPid;
+  PidController yawPid;
+  PidController zPid;
+
 };
 
 } // namespace arp
