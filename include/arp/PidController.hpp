@@ -48,6 +48,8 @@ class PidController
   double maxOutput_ = 0.0;  ///< The maximum admissible output.
   double minOutput_ = 0.0;  ///< The minimum admissible output.
   uint64_t lastTimestampMicroseconds_ = 0;  ///< timestamp when last called control()
+  // Own param.
+  uint64_t maxDeltaT = 100000; ///< In microseconds
 };
 
 }  // namespace arp
