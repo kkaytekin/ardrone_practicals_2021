@@ -168,9 +168,20 @@ int main(int argc, char **argv)
   ros::Subscriber subImu = nh.subscribe(
       "ardrone/imu", 50, &Subscriber::imuCallback, &subscriber);
 
+
+
   // interactive marker for pose control
   arp::InteractiveMarkerServer marker(autopilot);
   marker.activate(0.0,0.0,0.0,0.0);
+  // Track if we switched to automatic mode to reset marker
+  bool modeChanged = false;
+  // These values will be used to set the marker to current location
+  double x{0}, y{0}, z{0}, yaw{0};
+  // Set controller callback
+  visualInertialTracker.setControllerCallback(
+          std::bind(&arp::Autopilot::controllerCallback, &autopilot,
+                    std::placeholders::_1, std::placeholders::_2));
+
   // enter main event loop
   std::cout << "===== Hello AR Drone ====" << std::endl;
 
@@ -352,6 +363,7 @@ int main(int argc, char **argv)
     if (state[SDL_SCANCODE_END]) {
       std::cout << "Drone navigation set to automatic..." << std::endl;
       autopilot.setAutomatic();
+      modeChanged = true;
     }
     // Manual Mode
     if (state[SDL_SCANCODE_SPACE]) {
@@ -360,6 +372,7 @@ int main(int argc, char **argv)
     }
 
     if (!autopilot.isAutomatic()) {
+
       // TODO: process moving commands when in state 3,4, or 7
       /*
        * SDL_SCANCODE_W = 26,
@@ -422,18 +435,10 @@ int main(int argc, char **argv)
       }
     }
     else if (autopilot.isAutomatic()) {
-      double x, y, z, yaw;
-      bool success = autopilot.getPoseReference(x, y, z, yaw);
-      if (success) {
-        marker.activate(x, y, z, yaw);
-        // std::cout << "x, y, z, yaw: " << x<<" "<<y<<" "<<z<<" "<<yaw << std::endl;
-        // std::cout << "Getting pose reference..." << " [ OK ]" << std::endl;
-      } else {
-        std::cout << "Getting pose reference..." << " [FAIL]" << std::endl;
+      if (modeChanged) {
+        if (autopilot.getPoseReference(x, y, z, yaw)) marker.activate(x, y, z, yaw);
+        modeChanged = false;
       }
-      visualInertialTracker.setControllerCallback(
-              std::bind(&arp::Autopilot::controllerCallback, &autopilot,
-                        std::placeholders::_1, std::placeholders::_2));
     }
   }
 
