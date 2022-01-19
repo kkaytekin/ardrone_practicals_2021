@@ -39,7 +39,6 @@ double PidController::control(uint64_t timestampMicroseconds, double e,
   } else if (output > maxOutput_) {
       output = maxOutput_;
   } else {
-      // TODO: Ask - where is the best place to do type conversion?
       integratedError_ += e * (double)deltaT * 1e-6;
   }
   return output;

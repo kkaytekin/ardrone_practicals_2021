@@ -153,12 +153,14 @@ class Autopilot {
   std::mutex refMutex_; ///< We need to lock the reference access due to asynchronous arrival.
   std::atomic<bool> isAutomatic_; ///< True, if in automatic control mode.
   // Store PID's.
-  // TODO: Any tips for better ways to store PID's? I tried using a struct but it seemed more messy.
   PidController rollAngPid; // roll angle pid
   PidController pitchAngPid;
   PidController yawPid;
   PidController zPid;
-
+  // Variables to store maximum values.
+  double euler_angle_max_ = 0.0;
+  double control_vz_max_ = 0.0;
+  double control_yaw_max_ = 0.0;
 };
 
 } // namespace arp

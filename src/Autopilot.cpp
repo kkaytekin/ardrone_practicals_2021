@@ -30,12 +30,7 @@ Autopilot::Autopilot(ros::NodeHandle& nh)
       nh_->resolveName("ardrone/flattrim"), 1);
 
   // Set PID parameters
-  // TODO: Ask - compact way to do this? couldn't pass into function directly.
-  // Doesnt work: PidController::Parameters p{1.0,2.0,3.0};
-  // Doesnt work: PidController::Parameters p = {1.0,2.0,3.0};
-
   PidController::Parameters p;
-
   p.k_p=0.2; p.k_i=0.0; p.k_d=0.0;
   rollAngPid.setParameters(p);
   p.k_p=0.2; p.k_i=0.0; p.k_d=0.0;
@@ -194,10 +189,11 @@ void Autopilot::controllerCallback(uint64_t timeMicroseconds,
 
   // TODO: only enable when in flight
   DroneStatus status = droneStatus();
-  // TODO: Ask - do we also consider DroneStatus::Flying2?
-  if (status != DroneStatus::Flying) {
-    return;
-  }
+  // 3: Flying, 4: Hovering, 7: Flying2
+  if (status == DroneStatus::Flying ||
+      status == DroneStatus::Hovering ||
+      status == DroneStatus::Flying2) {} // keep going
+  else return; // else terminate
   // Calculate error
   kinematics::Transformation T_WS(x.t_WS, x.q_WS);
   Eigen::Matrix3d R_SW = T_WS.R().transpose();
@@ -214,9 +210,27 @@ void Autopilot::controllerCallback(uint64_t timeMicroseconds,
   double dYawError = 0.0;
   // TODO: get ros parameter
   // Task 2.3: Set limits for controller output
+  // TODO: ask - do we set the limit only once? would it be better to set limits somewhere else than the callback?
+  assert((nh_->getParam("/ardrone_driver/euler_angle_max",euler_angle_max_)) &&
+      "Warning: Couldn't get controller boundary value: max angle");
+  assert((nh_->getParam("/ardrone_driver/control_vz_max",control_vz_max_)) &&
+      "Warning: Couldn't get controller boundary value: max velocity");
+  assert((nh_->getParam("/ardrone_driver/control_yaw",control_yaw_max_)) &&
+      "Warning: Couldn't get controller boundary value: max yaw");
+  // Set controllers with these limits:
+  rollAngPid.setOutputLimits(-euler_angle_max_,euler_angle_max_); // roll angle pid
+  pitchAngPid.setOutputLimits(-euler_angle_max_,euler_angle_max_);
+  yawPid.setOutputLimits(-control_yaw_max_,control_yaw_max_);
+  control_vz_max_ /= 1000; // Convert from mm/s to m/s
+  zPid.setOutputLimits(-control_vz_max_,control_yaw_max_);
   // TODO: compute control output
-
+  // TODO: set posError sign accordingly!!
+  double u_y   = rollAngPid.control(timeMicroseconds,posError.y(),dPosError.y());
+  double u_x   = pitchAngPid.control(timeMicroseconds,posError.x(),dPosError.x());
+  double u_z   = zPid.control(timeMicroseconds,posError.z(),dPosError.z());
+  double u_yaw = yawPid.control(timeMicroseconds,yawError,dYawError);
   // TODO: send to move
+
 
 }
 
