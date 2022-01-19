@@ -346,62 +346,93 @@ int main(int argc, char **argv)
       std::cout << "Showing original image...              status=" << droneStatus << std::endl;
       undistort = false;
     }
+    // TODO: Add automatic/manual mode instructions to frontend
+    //Automatic Mode
+    // TODO: My keyboard doesnt have RCTRL. Before sending the task, change END to RCTRL
+    if (state[SDL_SCANCODE_END]) {
+      std::cout << "Drone navigation set to automatic..." << std::endl;
+      autopilot.setAutomatic();
+    }
+    // Manual Mode
+    if (state[SDL_SCANCODE_SPACE]) {
+      std::cout << "Drone navigation set to manual..." << std::endl;
+      autopilot.setManual();
+    }
 
-    // TODO: process moving commands when in state 3,4, or 7
-    /*
-     * SDL_SCANCODE_W = 26,
-     * SDL_SCANCODE_A = 4,
-     * SDL_SCANCODE_S = 22,
-     * SDL_SCANCODE_D = 7,
-     * SDL_SCANCODE_RIGHT = 79,
-     * SDL_SCANCODE_LEFT = 80,
-     * SDL_SCANCODE_DOWN = 81,
-     * SDL_SCANCODE_UP = 82,
-     */
-    up = 0; rotateLeft = 0; forward = 0; left = 0;
+    if (!autopilot.isAutomatic()) {
+      // TODO: process moving commands when in state 3,4, or 7
+      /*
+       * SDL_SCANCODE_W = 26,
+       * SDL_SCANCODE_A = 4,
+       * SDL_SCANCODE_S = 22,
+       * SDL_SCANCODE_D = 7,
+       * SDL_SCANCODE_RIGHT = 79,
+       * SDL_SCANCODE_LEFT = 80,
+       * SDL_SCANCODE_DOWN = 81,
+       * SDL_SCANCODE_UP = 82,
+       */
+      up = 0;
+      rotateLeft = 0;
+      forward = 0;
+      left = 0;
 
-    if (state[26] || state[4] || state[22] || state[7] ||
-      state[79] || state[80] || state[81] || state[82] ) {
-        if (state[SDL_SCANCODE_W]){
+      if (state[26] || state[4] || state[22] || state[7] ||
+          state[79] || state[80] || state[81] || state[82]) {
+        if (state[SDL_SCANCODE_W]) {
           std::cout << "Moving up...                           status=" << droneStatus;
           up = 1.0;
         }
-        if (state[SDL_SCANCODE_S]){
+        if (state[SDL_SCANCODE_S]) {
           std::cout << "Moving down...                         status=" << droneStatus;
           up = -1.0;
         }
-        if (state[SDL_SCANCODE_A]){
+        if (state[SDL_SCANCODE_A]) {
           std::cout << "Turning Left...                        status=" << droneStatus;
           rotateLeft = 1.0;
         }
-        if (state[SDL_SCANCODE_D]){
+        if (state[SDL_SCANCODE_D]) {
           std::cout << "Turning Right...                       status=" << droneStatus;
           rotateLeft = -1.0;
         }
-        if (state[SDL_SCANCODE_UP]){
+        if (state[SDL_SCANCODE_UP]) {
           std::cout << "Moving Forward...                      status=" << droneStatus;
           forward = 1.0;
         }
-        if (state[SDL_SCANCODE_DOWN]){
+        if (state[SDL_SCANCODE_DOWN]) {
           std::cout << "Moving Backward...                     status=" << droneStatus;
           forward = -1.0;
         }
-        if (state[SDL_SCANCODE_LEFT]){
+        if (state[SDL_SCANCODE_LEFT]) {
           std::cout << "Moving Left...                         status=" << droneStatus;
           left = 1.0;
         }
-        if (state[SDL_SCANCODE_RIGHT]){
+        if (state[SDL_SCANCODE_RIGHT]) {
           std::cout << "Moving Right...                        status=" << droneStatus;
           left = -1.0;
         }
-        bool success = autopilot.manualMove(forward,left,up,rotateLeft);
+        bool success = autopilot.manualMove(forward, left, up, rotateLeft);
+
         if (success) {
           std::cout << " [ OK ]" << std::endl;
         } else {
           std::cout << " [FAIL]" << std::endl;
         }
-    } else {
-    	autopilot.manualMove(0.0,0.0,0.0,0.0);
+      } else {
+        autopilot.manualMove(0.0, 0.0, 0.0, 0.0);
+      }
+    }
+    else if (autopilot.isAutomatic()) {
+      double x, y, z, yaw;
+      bool success = autopilot.getPoseReference(x, y, z, yaw);
+      if (success) {
+        marker.activate(x, y, z, yaw);
+        std::cout << "Getting pose reference..." << " [ OK ]" << std::endl;
+      } else {
+        std::cout << "Getting pose reference..." << " [FAIL]" << std::endl;
+      }
+      visualInertialTracker.setControllerCallback(
+              std::bind(&arp::Autopilot::controllerCallback, &autopilot,
+                        std::placeholders::_1, std::placeholders::_2));
     }
   }
 
