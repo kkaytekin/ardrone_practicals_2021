@@ -230,8 +230,14 @@ void Autopilot::controllerCallback(uint64_t timeMicroseconds,
   double u_z   = zPid.control(timeMicroseconds,posError.z(),dPosError.z());
   double u_yaw = yawPid.control(timeMicroseconds,yawError,dYawError);
   // TODO: send to move
-
-
+  // TODO: divide your computed controller outputs appropriately
+  //  before calling
+  bool success = move(u_x,u_y,u_z,u_yaw);
+  if (success) {
+    std::cout << " [ OK ]" << std::endl;
+  } else {
+    std::cout << " [FAIL]" << std::endl;
+  }
 }
 
 // Some functions for debugging
