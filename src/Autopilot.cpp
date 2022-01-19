@@ -31,13 +31,13 @@ Autopilot::Autopilot(ros::NodeHandle& nh)
 
   // Set PID parameters
   PidController::Parameters p;
-  p.k_p=0.2; p.k_i=0.0; p.k_d=0.0;
+  p.k_p=0.5; p.k_i=0.05; p.k_d=0.1;
   rollAngPid.setParameters(p);
-  p.k_p=0.2; p.k_i=0.0; p.k_d=0.0;
+  p.k_p=0.5; p.k_i=0.05; p.k_d=0.1;
   pitchAngPid.setParameters(p);
-  p.k_p=1.0; p.k_i=0.0; p.k_d=0.0;
+  p.k_p=2; p.k_i=0.05; p.k_d=0.1;
   yawPid.setParameters(p);
-  p.k_p=0.4; p.k_i=0.0; p.k_d=0.0;
+  p.k_p=0.02; p.k_i=0.05; p.k_d=0.1;
   zPid.setParameters(p);
 }
 
@@ -129,9 +129,11 @@ bool Autopilot::manualMove(double forward, double left, double up,
 bool Autopilot::move(double forward, double left, double up, double rotateLeft)
 {
   // TODO: implement...
+  //  Ask: do we need to do smth here for sheet 4? or is this an old todo?
   DroneStatus status = droneStatus();
   if (status == DroneStatus::Flying || status == DroneStatus::Hovering
       || status == DroneStatus::Flying2) {
+    //std::cout << "mv x, y, z , w: " << forward << ' ' << left << ' ' << up << ' ' << rotateLeft  << '\n';
     geometry_msgs::Twist Msg;
     Msg.linear.x = forward;
     Msg.linear.y = left;
@@ -186,7 +188,6 @@ void Autopilot::controllerCallback(uint64_t timeMicroseconds,
     setPoseReference(x.t_WS[0], x.t_WS[1], x.t_WS[2], yaw);
     return;
   }
-
   // TODO: only enable when in flight
   DroneStatus status = droneStatus();
   // 3: Flying, 4: Hovering, 7: Flying2
@@ -211,33 +212,36 @@ void Autopilot::controllerCallback(uint64_t timeMicroseconds,
   // TODO: get ros parameter
   // Task 2.3: Set limits for controller output
   // TODO: ask - do we set the limit only once? would it be better to set limits somewhere else than the callback?
-  assert((nh_->getParam("/ardrone_driver/euler_angle_max",euler_angle_max_)) &&
-      "Warning: Couldn't get controller boundary value: max angle");
-  assert((nh_->getParam("/ardrone_driver/control_vz_max",control_vz_max_)) &&
-      "Warning: Couldn't get controller boundary value: max velocity");
-  assert((nh_->getParam("/ardrone_driver/control_yaw",control_yaw_max_)) &&
-      "Warning: Couldn't get controller boundary value: max yaw");
+  if(!nh_->getParam("/ardrone_driver/euler_angle_max",euler_angle_max_))
+    std::cout << "Warning: Couldn't get controller boundary value: max angle\n";
+  if(!nh_->getParam("/ardrone_driver/control_vz_max",control_vz_max_))
+    std::cout << "Warning: Couldn't get controller boundary value: max velocity\n";
+  if(!nh_->getParam("/ardrone_driver/control_yaw",control_yaw_max_))
+    std::cout << "Warning: Couldn't get controller boundary value: max yaw\n";
+  //std::cout << "ang_max, vz_max, yaw_max: " << euler_angle_max_ << ' ' << control_vz_max_ << ' ' << control_yaw_max_ << '\n';
   // Set controllers with these limits:
   rollAngPid.setOutputLimits(-euler_angle_max_,euler_angle_max_); // roll angle pid
   pitchAngPid.setOutputLimits(-euler_angle_max_,euler_angle_max_);
   yawPid.setOutputLimits(-control_yaw_max_,control_yaw_max_);
   control_vz_max_ /= 1000; // Convert from mm/s to m/s
-  zPid.setOutputLimits(-control_vz_max_,control_yaw_max_);
+  zPid.setOutputLimits(-control_vz_max_,control_vz_max_);
   // TODO: compute control output
   // TODO: set posError sign accordingly!!
-  double u_y   = rollAngPid.control(timeMicroseconds,posError.y(),dPosError.y());
-  double u_x   = pitchAngPid.control(timeMicroseconds,posError.x(),dPosError.x());
-  double u_z   = zPid.control(timeMicroseconds,posError.z(),dPosError.z());
+  double u_y   = rollAngPid.control(timeMicroseconds,posError[1],dPosError[1]);
+  double u_x   = pitchAngPid.control(timeMicroseconds,posError[0],dPosError[0]);
+  double u_z   = zPid.control(timeMicroseconds,posError[2],dPosError[2]);
   double u_yaw = yawPid.control(timeMicroseconds,yawError,dYawError);
+  // std::cout << "u_ x, y, z , w: " << u_x << ' ' << u_y << ' ' << u_z << ' ' << u_yaw  << '\n';
   // TODO: send to move
   // TODO: divide your computed controller outputs appropriately
   //  before calling
-  bool success = move(u_x,u_y,u_z,u_yaw);
-  if (success) {
-    std::cout << " [ OK ]" << std::endl;
-  } else {
-    std::cout << " [FAIL]" << std::endl;
-  }
+  if(!move(u_x,u_y,u_z,u_yaw)) std::cout << "Automatic movement: [FAIL]\n";
+  // TODO: Problem: i cannot set where to go. What's the problem?
+//  if (success) {
+//    std::cout << "Automatic movement: [ OK ]" << std::endl;
+//  } else {
+//    std::cout << "Automatic movement: [FAIL]" << std::endl;
+//  }
 }
 
 // Some functions for debugging

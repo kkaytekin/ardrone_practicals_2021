@@ -426,7 +426,8 @@ int main(int argc, char **argv)
       bool success = autopilot.getPoseReference(x, y, z, yaw);
       if (success) {
         marker.activate(x, y, z, yaw);
-        std::cout << "Getting pose reference..." << " [ OK ]" << std::endl;
+        // std::cout << "x, y, z, yaw: " << x<<" "<<y<<" "<<z<<" "<<yaw << std::endl;
+        // std::cout << "Getting pose reference..." << " [ OK ]" << std::endl;
       } else {
         std::cout << "Getting pose reference..." << " [FAIL]" << std::endl;
       }

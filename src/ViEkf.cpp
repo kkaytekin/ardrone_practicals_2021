@@ -299,7 +299,7 @@ bool ViEkf::update(const Detection & detection){
 
   // chi2 test
   if(y.transpose()*S.inverse()*y > 40.0){
-    std::cout << "Rejecting measurement " << std::endl;
+    // std::cout << "Rejecting measurement " << std::endl;
     return false;
   }
 
