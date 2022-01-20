@@ -27,6 +27,7 @@
 
 //Sheet 4
 #include <arp/InteractiveMarkerServer.hpp>
+#include <fstream>
 
 class Subscriber
 {
@@ -127,9 +128,32 @@ int main(int argc, char **argv)
   std::string mapFile;
   if(!nh.getParam("arp_node/map", mapFile))
     ROS_FATAL("error loading parameter");
+  std::cout << "MapFile: " << mapFile << '\n';
   std::string mapPath = path+"/maps/"+mapFile;
   if(!frontend.loadMap(mapPath))
     ROS_FATAL_STREAM("could not load map from " << mapPath << " !");
+
+  // Occupancy map
+  // TODO: Ask - How can I to show it on rviz map?
+  if(!nh.getParam("/arp_node/occupancymap", mapFile))
+    ROS_FATAL("error loading parameter");
+  mapPath = path+"/maps/"+mapFile;
+  // open the file:
+  std::ifstream mapFileO(mapPath, std::ios::in | std::ios::binary);
+  if(!mapFileO.is_open())
+    ROS_FATAL_STREAM("could not open map file " << mapPath);
+// first read the map size along all the dimensions:
+  int sizes[3];
+  if(!mapFileO.read((char*)sizes, 3*sizeof(int)))
+    ROS_FATAL_STREAM("could not read map file " << mapPath);
+// now read the map data:
+  char* mapData = new char[sizes[0]*sizes[1]*sizes[2]]; // don’t forget \
+to delete[] in the end!
+  if(!mapFileO.read((char*)mapData, sizes[0]*sizes[1]*sizes[2]))
+    ROS_FATAL_STREAM("could not read map file " << mapPath);
+  mapFileO.close();
+ //now wrap it with a cv::Mat for easier access:
+  cv::Mat wrappedMapData(3, sizes, CV_8SC1, mapData);
 
   // state publisher -- provided for rviz visualisation of drone pose:
   arp::StatePublisher pubState(nh);
@@ -171,11 +195,12 @@ int main(int argc, char **argv)
 
 
   // interactive marker for pose control
-  arp::InteractiveMarkerServer marker(autopilot);
+  // TODO: Ask - a better place to calculate occupancy map part?
+  arp::InteractiveMarkerServer marker(autopilot,wrappedMapData, sizes);
   marker.activate(0.0,0.0,0.0,0.0);
   // Track if we switched to automatic mode to reset marker
   bool modeChanged = false;
-  // These values will be used to set the marker to current location
+  // These variables will be used to set the marker to current location
   double x{0}, y{0}, z{0}, yaw{0};
   // Set controller callback
   visualInertialTracker.setControllerCallback(

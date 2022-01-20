@@ -31,7 +31,7 @@ double PidController::control(uint64_t timestampMicroseconds, double e,
   // Update time stamp
   lastTimestampMicroseconds_ = timestampMicroseconds;
   // Controller output
-  std::cout << "error: "<< e << " edot: " << e_dot <<'\n';
+  //std::cout << "error: "<< e << " edot: " << e_dot <<'\n';
 //  std::cout << "miO, maO, p, i, d, eint: "<< minOutput_ << ' ' << maxOutput_ << ' ' << parameters_.k_p << ' '
 //      << parameters_.k_i << ' ' << parameters_.k_d << ' ' << integratedError_ <<'\n';
   double output = parameters_.k_p * e

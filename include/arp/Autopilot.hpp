@@ -120,6 +120,10 @@ class Autopilot {
   /// \brief Print reference values for debugging
   void printRefVals();
 
+  /// \brief Get occupancy map data path
+  // Not using currently, but would use for an implementation within autopilot later.
+  std::string getOccupancyMap();
+
  protected:
   /// \brief Move the drone.
   /// @param[in] forward Forward tilt [-1,...,1] scaling the maximum tilt ROS parameter.

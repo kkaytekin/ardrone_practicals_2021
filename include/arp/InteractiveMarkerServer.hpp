@@ -11,13 +11,16 @@
 #include <std_srvs/Empty.h>
 #include <interactive_markers/interactive_marker_server.h>
 #include <arp/Autopilot.hpp>
+#include <fstream>
 
 namespace arp {
 
 class InteractiveMarkerServer
 {
 public:
-  InteractiveMarkerServer(arp::Autopilot & autopilot) : autopilot_(&autopilot)
+  InteractiveMarkerServer(arp::Autopilot & autopilot , cv::Mat & Map , const int sizes[])
+    : autopilot_(&autopilot), wrappedMapData_(&Map),
+    sizes_ {sizes[0], sizes[1], sizes[2]}
   {
     // create an interactive marker server on the topic namespace simple_marker
     server_.reset(
@@ -106,6 +109,27 @@ public:
     // 'commit' changes and send to all clients
     server_->applyChanges();
   }
+
+  bool isOccupied(
+    const visualization_msgs::InteractiveMarkerFeedbackConstPtr &feedback)
+  {
+    int i,j,k;
+    i = std::round(feedback->pose.position.x/0.1)+(sizes_[0]-1)/2;
+    j = std::round(feedback->pose.position.y/0.1)+(sizes_[1]-1)/2;
+    k = std::round(feedback->pose.position.z/0.1)+(sizes_[2]-1)/2;
+    // std::cout << (int)wrappedMapData_->at<char>(i,j,k) << '\n';
+    // wrappedMapData.at() returns a signed char between (-127, 127)
+    // which is truncated log ( p_occupied / (1 - p_occupied))
+    // a value of -5 is almost surely unoccupied.
+    // -1 means %27 chance of being occupied.
+    // -2 means %12 "
+    // -3 means %5  "
+    // -4 means %2  "
+    if ((int)wrappedMapData_->at<char>(i,j,k) < 0 && (int)wrappedMapData_->at<char>(i,j,k) > -128)
+      return false;
+    else
+      return true;
+  }
   void processFeedback(
     const visualization_msgs::InteractiveMarkerFeedbackConstPtr &feedback)
   {
@@ -115,12 +139,19 @@ public:
     if (feedback->pose.orientation.z < 0.0) {
       yaw = -angle;
     }
-    autopilot_->setPoseReference(feedback->pose.position.x, feedback->pose.position.y,
+    // If it is occupied, don't even set the pose reference.
+    if (!isOccupied(feedback))
+      autopilot_->setPoseReference(feedback->pose.position.x, feedback->pose.position.y,
                                  feedback->pose.position.z, yaw);
+    else
+      // TODO: do binary search between autopilot point and current point
+    { std::cout << "Target is in occupied space, or in an undefined position (e.g. out of bounds)!\n"; }
   }
 protected:
   std::unique_ptr<interactive_markers::InteractiveMarkerServer> server_;
   arp::Autopilot* autopilot_;
+  cv::Mat* wrappedMapData_;
+  int sizes_[3];
 };
 
 } // namespace arp

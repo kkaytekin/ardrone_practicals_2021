@@ -176,6 +176,13 @@ bool Autopilot::getPoseReference(double& x, double& y, double& z, double& yaw) {
   yaw = ref_yaw_;
   return true;
 }
+//
+std::string Autopilot::getOccupancyMap() {
+  std::string mapFile;
+      if(!nh_->getParam("/arp_node/occupancymap", mapFile))
+        ROS_FATAL("error loading parameter");
+  return mapFile;
+}
 
 /// The callback from the estimator that sends control outputs to the drone
 void Autopilot::controllerCallback(uint64_t timeMicroseconds,
