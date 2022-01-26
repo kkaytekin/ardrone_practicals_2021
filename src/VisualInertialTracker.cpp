@@ -5,6 +5,8 @@
  *      Author: sleutene
  */
 
+#include <iostream>
+#include <chrono>
 #include <arp/VisualInertialTracker.hpp>
 
 namespace arp {
@@ -101,8 +103,14 @@ void VisualInertialTracker::processingLoop()
       if(successGetState && estimator_->isInitialised()) {
         needsReInitialisation = false;
       }
+
+      //std::chrono::time_point<std::chrono::system_clock> tic = std::chrono::system_clock::now();
       bool ransacSuccess = frontend_->detectAndMatch(
           cameraMeasurement.image, dir, detections, T_CW, visualisationImage, needsReInitialisation);
+      //std::chrono::time_point<std::chrono::system_clock> toc = std::chrono::system_clock::now();
+      //auto milliseconds = std::chrono::duration_cast<std::chrono::milliseconds>(toc - tic).count();
+      //std::cout << milliseconds << std::endl;
+
       if (detections.size() > 0) {
         // feed to estimator (measurement update)
         if (estimator_->isInitialised() && fusionEnabled_) {

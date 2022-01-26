@@ -25,6 +25,10 @@
 #include <arp/ViEkf.hpp>
 #include <arp/VisualInertialTracker.hpp>
 
+//Sheet 4
+#include <arp/InteractiveMarkerServer.hpp>
+#include <fstream>
+
 class Subscriber
 {
  public:
@@ -124,9 +128,31 @@ int main(int argc, char **argv)
   std::string mapFile;
   if(!nh.getParam("arp_node/map", mapFile))
     ROS_FATAL("error loading parameter");
+  std::cout << "MapFile: " << mapFile << '\n';
   std::string mapPath = path+"/maps/"+mapFile;
   if(!frontend.loadMap(mapPath))
     ROS_FATAL_STREAM("could not load map from " << mapPath << " !");
+
+  // Occupancy map
+  if(!nh.getParam("/arp_node/occupancymap", mapFile))
+    ROS_FATAL("error loading parameter");
+  mapPath = path+"/maps/"+mapFile;
+  // open the file:
+  std::ifstream mapFileO(mapPath, std::ios::in | std::ios::binary);
+  if(!mapFileO.is_open())
+    ROS_FATAL_STREAM("could not open map file " << mapPath);
+// first read the map size along all the dimensions:
+  int sizes[3];
+  if(!mapFileO.read((char*)sizes, 3*sizeof(int)))
+    ROS_FATAL_STREAM("could not read map file " << mapPath);
+// now read the map data:
+  char* mapData = new char[sizes[0]*sizes[1]*sizes[2]]; // don’t forget \
+to delete[] in the end!
+  if(!mapFileO.read((char*)mapData, sizes[0]*sizes[1]*sizes[2]))
+    ROS_FATAL_STREAM("could not read map file " << mapPath);
+  mapFileO.close();
+ //now wrap it with a cv::Mat for easier access:
+  cv::Mat wrappedMapData(3, sizes, CV_8SC1, mapData);
 
   // state publisher -- provided for rviz visualisation of drone pose:
   arp::StatePublisher pubState(nh);
@@ -164,6 +190,20 @@ int main(int argc, char **argv)
       "ardrone/front/image_raw", 2, &Subscriber::imageCallback, &subscriber);
   ros::Subscriber subImu = nh.subscribe(
       "ardrone/imu", 50, &Subscriber::imuCallback, &subscriber);
+
+
+
+  // interactive marker for pose control
+  arp::InteractiveMarkerServer marker(autopilot,wrappedMapData, sizes);
+  marker.activate(0.0,0.0,0.0,0.0);
+  // Track if we switched to automatic mode to reset marker
+  bool modeChanged = false;
+  // These variables will be used to set the marker to current location
+  double x{0}, y{0}, z{0}, yaw{0};
+  // Set controller callback
+  visualInertialTracker.setControllerCallback(
+          std::bind(&arp::Autopilot::controllerCallback, &autopilot,
+                    std::placeholders::_1, std::placeholders::_2));
 
   // enter main event loop
   std::cout << "===== Hello AR Drone ====" << std::endl;
@@ -216,6 +256,9 @@ int main(int argc, char **argv)
     }
     auto batteryStatus = autopilot.batteryStatus();
 
+    //debug commands
+    //autopilot.printRefVals();
+
     // render image, if there is a new one available
     if(visualInertialTracker.getLastVisualisationImage(originalImage)) {  // subscriber.getLastImage(originalImage
 
@@ -235,13 +278,13 @@ int main(int argc, char **argv)
 
       // Print instructions
       cv::putText(image,
-                  "Instructions: T - take off, L - land, ESC - motors off, Arrows - move horizontally, W - ascend, S - descend",
+                  "Instructions: T - take off, L - land, ESC - motors off, Arrows - move horizontally, W - ascend",
                   cv::Point(5,345),
                   cv::FONT_HERSHEY_COMPLEX_SMALL,
                   0.5,
                   cv::Scalar(255,255,255));
       cv::putText(image,
-                  "A - yaw left, D - yaw right, O - original image, U - undistorted image",
+                  " S - descend,  A - yaw left, D - yaw right, O - original image, U - undistorted image",
                   cv::Point(5,355),
                   cv::FONT_HERSHEY_COMPLEX_SMALL,
                   0.5,
@@ -250,6 +293,22 @@ int main(int argc, char **argv)
       cv::putText(image,
                   "Status: " + droneStatusString,
                   cv::Point(5,20),
+                  cv::FONT_HERSHEY_COMPLEX_SMALL,
+                  1,
+                  cv::Scalar(255,255,255),
+                  1.5);
+      // Print manual mode instruction
+      cv::putText(image,
+                  "SPACE: Manual",
+                  cv::Point(440,20),
+                  cv::FONT_HERSHEY_COMPLEX_SMALL,
+                  1,
+                  cv::Scalar(255,255,255),
+                  1.5);
+      // Print auto mode instruction
+      cv::putText(image,
+                  "RCTRL: Auto",
+                  cv::Point(470,40),
                   cv::FONT_HERSHEY_COMPLEX_SMALL,
                   1,
                   cv::Scalar(255,255,255),
@@ -337,62 +396,86 @@ int main(int argc, char **argv)
       std::cout << "Showing original image...              status=" << droneStatus << std::endl;
       undistort = false;
     }
+    // Automatic Mode
+    if (state[SDL_SCANCODE_RCTRL]) {
+      std::cout << "Drone navigation set to automatic..." << std::endl;
+      autopilot.setAutomatic();
+      modeChanged = true;
+    }
+    // Manual Mode
+    if (state[SDL_SCANCODE_SPACE]) {
+      std::cout << "Drone navigation set to manual..." << std::endl;
+      autopilot.setManual();
+    }
 
-    // TODO: process moving commands when in state 3,4, or 7
-    /*
-     * SDL_SCANCODE_W = 26,
-     * SDL_SCANCODE_A = 4,
-     * SDL_SCANCODE_S = 22,
-     * SDL_SCANCODE_D = 7,
-     * SDL_SCANCODE_RIGHT = 79,
-     * SDL_SCANCODE_LEFT = 80,
-     * SDL_SCANCODE_DOWN = 81,
-     * SDL_SCANCODE_UP = 82,
-     */
-    up = 0; rotateLeft = 0; forward = 0; left = 0;
+    if (!autopilot.isAutomatic()) {
 
-    if (state[26] || state[4] || state[22] || state[7] ||
-      state[79] || state[80] || state[81] || state[82] ) {
-        if (state[SDL_SCANCODE_W]){
+      // process moving commands when droneStatus is 3,4 or 7
+      /*
+       * SDL_SCANCODE_W = 26,
+       * SDL_SCANCODE_A = 4,
+       * SDL_SCANCODE_S = 22,
+       * SDL_SCANCODE_D = 7,
+       * SDL_SCANCODE_RIGHT = 79,
+       * SDL_SCANCODE_LEFT = 80,
+       * SDL_SCANCODE_DOWN = 81,
+       * SDL_SCANCODE_UP = 82,
+       */
+      up = 0;
+      rotateLeft = 0;
+      forward = 0;
+      left = 0;
+
+      if (state[26] || state[4] || state[22] || state[7] ||
+          state[79] || state[80] || state[81] || state[82]) {
+        if (state[SDL_SCANCODE_W]) {
           std::cout << "Moving up...                           status=" << droneStatus;
           up = 1.0;
         }
-        if (state[SDL_SCANCODE_S]){
+        if (state[SDL_SCANCODE_S]) {
           std::cout << "Moving down...                         status=" << droneStatus;
           up = -1.0;
         }
-        if (state[SDL_SCANCODE_A]){
+        if (state[SDL_SCANCODE_A]) {
           std::cout << "Turning Left...                        status=" << droneStatus;
           rotateLeft = 1.0;
         }
-        if (state[SDL_SCANCODE_D]){
+        if (state[SDL_SCANCODE_D]) {
           std::cout << "Turning Right...                       status=" << droneStatus;
           rotateLeft = -1.0;
         }
-        if (state[SDL_SCANCODE_UP]){
+        if (state[SDL_SCANCODE_UP]) {
           std::cout << "Moving Forward...                      status=" << droneStatus;
           forward = 1.0;
         }
-        if (state[SDL_SCANCODE_DOWN]){
+        if (state[SDL_SCANCODE_DOWN]) {
           std::cout << "Moving Backward...                     status=" << droneStatus;
           forward = -1.0;
         }
-        if (state[SDL_SCANCODE_LEFT]){
+        if (state[SDL_SCANCODE_LEFT]) {
           std::cout << "Moving Left...                         status=" << droneStatus;
           left = 1.0;
         }
-        if (state[SDL_SCANCODE_RIGHT]){
+        if (state[SDL_SCANCODE_RIGHT]) {
           std::cout << "Moving Right...                        status=" << droneStatus;
           left = -1.0;
         }
-        bool success = autopilot.manualMove(forward,left,up,rotateLeft);
+        bool success = autopilot.manualMove(forward, left, up, rotateLeft);
+
         if (success) {
           std::cout << " [ OK ]" << std::endl;
         } else {
           std::cout << " [FAIL]" << std::endl;
         }
-    } else {
-    	autopilot.manualMove(0.0,0.0,0.0,0.0);
+      } else {
+        autopilot.manualMove(0.0, 0.0, 0.0, 0.0);
+      }
+    }
+    else if (autopilot.isAutomatic()) {
+      if (modeChanged) {
+        if (autopilot.getPoseReference(x, y, z, yaw)) marker.activate(x, y, z, yaw);
+        modeChanged = false;
+      }
     }
   }
 

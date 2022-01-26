@@ -324,7 +324,7 @@ TEST(ViEkfTest, updateState) {
   arp::kinematics::RobotState newState;
   viEkfTest.getState(0, newState, &newP);
 
-  // with own computation: TODO this needs to be recomputed
+  // with own computation
   arp::kinematics::RobotState newState2;
   newState2.t_WS <<  0.902192, 1.60335,  2.64146;
   newState2.q_WS.coeffs() << 0.83826, -0.426184,  0.112569, -0.320961;

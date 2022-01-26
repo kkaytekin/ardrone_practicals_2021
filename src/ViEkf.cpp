@@ -91,7 +91,7 @@ bool ViEkf::getState(uint64_t timestampMicroseconds,
   }
 
   if (timestampPropagatedMicrosec_ > timestampLastUpdateMicrosec_) {
-    if (timestampPropagatedMicrosec_ - timestampLastUpdateMicrosec_ > 100000) {
+    if (timestampPropagatedMicrosec_ - timestampLastUpdateMicrosec_ > 600000) {
       // stop propagation, this will just diverge
       // assign output
       x = x_propagated_;
@@ -299,7 +299,7 @@ bool ViEkf::update(const Detection & detection){
 
   // chi2 test
   if(y.transpose()*S.inverse()*y > 40.0){
-    std::cout << "Rejecting measurement " << std::endl;
+    // std::cout << "Rejecting measurement " << std::endl;
     return false;
   }
 
