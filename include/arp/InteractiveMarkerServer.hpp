@@ -140,11 +140,12 @@ public:
       yaw = -angle;
     }
     // If it is occupied, don't even set the pose reference.
-    if (!isOccupied(feedback))
+    if (!isOccupied(feedback)) {
       autopilot_->setPoseReference(feedback->pose.position.x, feedback->pose.position.y,
                                  feedback->pose.position.z, yaw);
+      std::cout << "Target acquired!\n";
+    }
     else
-      // TODO: do binary search between autopilot point and current point
     { std::cout << "Target is in occupied space, or in an undefined position (e.g. out of bounds)!\n"; }
   }
 protected:

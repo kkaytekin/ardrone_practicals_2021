@@ -134,7 +134,7 @@ int main(int argc, char **argv)
     ROS_FATAL_STREAM("could not load map from " << mapPath << " !");
 
   // Occupancy map
-  // TODO: Ask - How can I to show it on rviz map?
+  // Q: Ask - How can I to show it on rviz map? A: the map data is custom, so there is no tool to visualize it.
   if(!nh.getParam("/arp_node/occupancymap", mapFile))
     ROS_FATAL("error loading parameter");
   mapPath = path+"/maps/"+mapFile;
@@ -195,7 +195,6 @@ to delete[] in the end!
 
 
   // interactive marker for pose control
-  // TODO: Ask - a better place to calculate occupancy map part?
   arp::InteractiveMarkerServer marker(autopilot,wrappedMapData, sizes);
   marker.activate(0.0,0.0,0.0,0.0);
   // Track if we switched to automatic mode to reset marker
@@ -280,13 +279,13 @@ to delete[] in the end!
 
       // Print instructions
       cv::putText(image,
-                  "Instructions: T - take off, L - land, ESC - motors off, Arrows - move horizontally, W - ascend, S - descend",
+                  "Instructions: T - take off, L - land, ESC - motors off, Arrows - move horizontally, W - ascend",
                   cv::Point(5,345),
                   cv::FONT_HERSHEY_COMPLEX_SMALL,
                   0.5,
                   cv::Scalar(255,255,255));
       cv::putText(image,
-                  "A - yaw left, D - yaw right, O - original image, U - undistorted image",
+                  " S - descend,  A - yaw left, D - yaw right, O - original image, U - undistorted image",
                   cv::Point(5,355),
                   cv::FONT_HERSHEY_COMPLEX_SMALL,
                   0.5,
@@ -295,6 +294,22 @@ to delete[] in the end!
       cv::putText(image,
                   "Status: " + droneStatusString,
                   cv::Point(5,20),
+                  cv::FONT_HERSHEY_COMPLEX_SMALL,
+                  1,
+                  cv::Scalar(255,255,255),
+                  1.5);
+      // Print manual mode instruction
+      cv::putText(image,
+                  "SPACE: Manual",
+                  cv::Point(440,20),
+                  cv::FONT_HERSHEY_COMPLEX_SMALL,
+                  1,
+                  cv::Scalar(255,255,255),
+                  1.5);
+      // Print auto mode instruction
+      cv::putText(image,
+                  "RCTRL: Auto",
+                  cv::Point(470,40),
                   cv::FONT_HERSHEY_COMPLEX_SMALL,
                   1,
                   cv::Scalar(255,255,255),
@@ -385,7 +400,7 @@ to delete[] in the end!
     // TODO: Add automatic/manual mode instructions to frontend
     //Automatic Mode
     // TODO: My keyboard doesnt have RCTRL. Before sending the task, change END to RCTRL
-    if (state[SDL_SCANCODE_END]) {
+    if (state[SDL_SCANCODE_RCTRL]) {
       std::cout << "Drone navigation set to automatic..." << std::endl;
       autopilot.setAutomatic();
       modeChanged = true;
