@@ -134,7 +134,6 @@ int main(int argc, char **argv)
     ROS_FATAL_STREAM("could not load map from " << mapPath << " !");
 
   // Occupancy map
-  // Q: Ask - How can I to show it on rviz map? A: the map data is custom, so there is no tool to visualize it.
   if(!nh.getParam("/arp_node/occupancymap", mapFile))
     ROS_FATAL("error loading parameter");
   mapPath = path+"/maps/"+mapFile;
@@ -397,9 +396,7 @@ to delete[] in the end!
       std::cout << "Showing original image...              status=" << droneStatus << std::endl;
       undistort = false;
     }
-    // TODO: Add automatic/manual mode instructions to frontend
-    //Automatic Mode
-    // TODO: My keyboard doesnt have RCTRL. Before sending the task, change END to RCTRL
+    // Automatic Mode
     if (state[SDL_SCANCODE_RCTRL]) {
       std::cout << "Drone navigation set to automatic..." << std::endl;
       autopilot.setAutomatic();
@@ -413,7 +410,7 @@ to delete[] in the end!
 
     if (!autopilot.isAutomatic()) {
 
-      // TODO: process moving commands when in state 3,4, or 7
+      // process moving commands when droneStatus is 3,4 or 7
       /*
        * SDL_SCANCODE_W = 26,
        * SDL_SCANCODE_A = 4,

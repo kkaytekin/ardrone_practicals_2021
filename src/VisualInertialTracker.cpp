@@ -77,7 +77,7 @@ void VisualInertialTracker::processingLoop()
         kinematics::RobotState x;
         t = imuMeasurement.timestampMicroseconds;
         if (estimator_->getState(t, x)) {
-          if(controllerCallback_) { // TODO: Ask controllerCallback_ is void; returns nothing. How do we use it in if-statement?
+          if(controllerCallback_) {
             StateEstimate estimate;
             estimate.timestampMicroseconds = t;
             estimate.state = x;

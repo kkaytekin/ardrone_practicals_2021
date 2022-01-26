@@ -214,9 +214,7 @@ void Autopilot::controllerCallback(uint64_t timeMicroseconds,
   // Calculate error derivatives
   Eigen::Vector3d dPosError = - R_SW * x.v_W;
   double dYawError = 0.0;
-  // TODO: get ros parameter
-  // Task 2.3: Set limits for controller output
-  // TODO: ask - why do we set the limit here? would it not be better to set limits somewhere else than the callback, so that we do it only once?
+  // Set limits for controller output
   if(!nh_->getParam("/ardrone_driver/euler_angle_max",euler_angle_max_))
     std::cout << "Warning: Couldn't get controller boundary value: max angle\n";
   if(!nh_->getParam("/ardrone_driver/control_vz_max",control_vz_max_))
