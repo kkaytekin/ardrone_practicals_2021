@@ -11,6 +11,7 @@
 #include <mutex>
 #include <Eigen/Core>
 #include <atomic>
+#include <deque>
 
 #include <ros/ros.h>
 
@@ -123,6 +124,30 @@ class Autopilot {
   /// \brief Get occupancy map data path
   // Not using currently, but would use for an implementation within autopilot later.
   std::string getOccupancyMap();
+  /// \brief A Helper struct to send lists of waypoints.
+  struct Waypoint {
+    double x; ///< The World frame x coordinate.
+    double y; ///< The World frame y coordinate.
+    double z; ///< The World frame z coordinate.
+    double yaw; ///< The yaw angle of the robot w.r.t. the World frame.
+    double posTolerance; ///< The position tolerance: if within, it's considered reached.
+  };
+
+  /// \brief Command the drone to fly to these waypoints in order
+  ///        (front to back). When finished, the drone will hover at
+  ///        the last waypoint.
+  /// @param[in] waypoints Waypoint list.
+  void flyPath(const std::deque<Waypoint>& waypoints) {
+    std::lock_guard<std::mutex> l(waypointMutex_);
+    waypoints_ = waypoints;
+  }
+
+  /// \brief How many waypoints still have to be flown to?
+  /// \return The number of waypoints still not reached.
+  int waypointsLeft() {
+    std::lock_guard<std::mutex> l(waypointMutex_);
+    return waypoints_.size();
+  }
 
  protected:
   /// \brief Move the drone.
@@ -165,6 +190,9 @@ class Autopilot {
   double euler_angle_max_ = 0.0;
   double control_vz_max_ = 0.0;
   double control_yaw_max_ = 0.0;
+
+  std::deque<Waypoint> waypoints_;  ///< A list of waypoints that will be approached, if not empty.
+  std::mutex waypointMutex_;  ///< We need to lock the waypoint access due to asynchronous arrival.
 };
 
 } // namespace arp
