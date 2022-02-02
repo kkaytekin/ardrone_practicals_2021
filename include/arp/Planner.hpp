@@ -23,8 +23,6 @@ class Planner
           double x_goal, double y_goal, double z_goal,
           double x_start = 0, double y_start = 0, double z_start = 0);
   
-  typedef std::tuple<int, int, int> relIndex_t;
-
   struct MapIndices {
     int x;
     int y;
@@ -39,7 +37,7 @@ class Planner
 
   struct Vertex {
     MapIndices idx;
-    Vertex* previous;
+    Vertex* previous = 0;  // 0 means undefined
     double distance = -1;
     double distanceEstimate = -1;
     bool operator< (const Vertex& rhs) {
@@ -54,10 +52,11 @@ class Planner
 
  protected:
   cv::Mat* wrappedMapData_;
+  cv::Mat distanceMatrix_;
   Vertex* start_;
   Vertex* goal_;
   MapCoordinates goalCoordinates_;
-  relIndex_t neighborIndices_[];
+  MapIndices neighborIndices_[];
 
   MapIndices coordinatesToIndices (MapCoordinates& coordinates);
   MapCoordinates indicesToCoordinates (MapIndices& indices);
