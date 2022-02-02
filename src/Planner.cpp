@@ -90,6 +90,26 @@ namespace arp {
     return -1;
   }
 
+  std::deque<Autopilot::Waypoint> Planner::getWaypoints() {
+    std::deque<Autopilot::Waypoint> waypoints;
+    Planner::Vertex* current = goal_;
+    while (true) {
+      if (*current == *start_) {
+        return waypoints;
+      }
+      Planner::MapCoordinates coordinates = indicesToCoordinates(current->idx);
+      Autopilot::Waypoint waypoint = {
+        coordinates.x,
+        coordinates.y,
+        coordinates.z,
+        0,  // yaw angle
+        10  // tolerance
+      };
+      waypoints.push_back(waypoint);
+      current = current->previous;
+    }
+  }
+
   double Planner::distanceEstimate (Planner::Vertex* vertex)
   {
     Planner::MapCoordinates vertexCoordinates = indicesToCoordinates(vertex->idx);

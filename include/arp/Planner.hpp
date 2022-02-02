@@ -49,6 +49,7 @@ class Planner
   };
 
   double aStar();
+  std::deque<arp::Autopilot::Waypoint> getWaypoints();
 
  protected:
   cv::Mat* wrappedMapData_;
