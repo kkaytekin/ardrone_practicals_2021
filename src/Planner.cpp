@@ -17,45 +17,70 @@ namespace arp {
                    double x_start = 0, double y_start = 0, double z_start = 0)
   {
     wrappedMapData_ = &Map;
+    relIndex_t neighborIndices_[6] = {
+      {-1, 0, 0},
+      {+1, 0, 0},
+      {0, -1, 0},
+      {0, +1, 0},
+      {0, 0, -1},
+      {0, 0, +1}
+    };
+
     MapCoordinates startCoordinates = {x_start, y_start, z_start};
     start_->idx = coordinatesToIndices(startCoordinates);
     start_->previous = start_;
+
     MapCoordinates goalCoordinates = {x_goal, y_goal, z_goal};
     goalCoordinates_ = goalCoordinates;
     goal_->idx = coordinatesToIndices(goalCoordinates);
     goal_->previous = goal_;
   }
 
-  void a_star ()
+  double Planner::aStar ()
   {
     std::set<Planner::Vertex> openSet;
-    openSet.insert(start_);
+    start_->distance = 0;
+    start_->distanceEstimate = distanceEstimate(start_);
+    openSet.insert(*start_);
+
+    while (!openSet.empty()) {
+      Planner::Vertex current = *openSet.begin();
+      if (current == *goal_) {
+        return current.distance;
+      }
+      // go through 6 neighboring vertices (*NOT* the 26 neighboring!)
+      for (int i=0; i<6; i++) {
+        relIndex_t neighborIndex = neighborIndices_[i];
+        //TODO
+      }
+    }
   }
 
-  double distanceEstimate (Planner::Vertex& vertex)
+  double Planner::distanceEstimate (Planner::Vertex* vertex)
   {
-    // TODO: why doesnt it know these functions/variables here?
-    Planner::MapCoordinates vertexCoords = indicesToCoordinates(vertex.idx);
-    return std::sqrt((vertexCoords.x-goalCoords_.x)*(vertexCoords.x-goalCoords_.x) +
-                     (vertexCoords.y-goalCoords_.y)*(vertexCoords.y-goalCoords_.y) +
-                     (vertexCoords.z-goalCoords_.z)*(vertexCoords.z-goalCoords_.z));
+    Planner::MapCoordinates vertexCoordinates = indicesToCoordinates(vertex->idx);
+    return std::sqrt(
+      (vertexCoordinates.x - goalCoordinates_.x) * (vertexCoordinates.x - goalCoordinates_.x) +
+      (vertexCoordinates.y - goalCoordinates_.y) * (vertexCoordinates.y - goalCoordinates_.y) +
+      (vertexCoordinates.z - goalCoordinates_.z) * (vertexCoordinates.z - goalCoordinates_.z)
+    );
   }
 
-  Planner::MapIndices coordinatesToIndices (Planner::MapCoordinates& coordinates)
+  Planner::MapIndices Planner::coordinatesToIndices (Planner::MapCoordinates& coordinates)
   {
     return Planner::MapIndices{
-      std::round(coordinates.x/0.1) + (wrappedMapData_.size[0]-1)/2,
-      std::round(coordinates.y/0.1) + (wrappedMapData_.size[1]-1)/2,
-      std::round(coordinates.z/0.1) + (wrappedMapData_.size[2]-1)/2
+      (int) std::round(coordinates.x/0.1) + (wrappedMapData_->size[0]-1)/2,
+      (int) std::round(coordinates.y/0.1) + (wrappedMapData_->size[1]-1)/2,
+      (int) std::round(coordinates.z/0.1) + (wrappedMapData_->size[2]-1)/2
     };
   }
 
-  Planner::MapCoordinates indicesToCoordinates (Planner::MapIndices& indices)
+  Planner::MapCoordinates Planner::indicesToCoordinates (Planner::MapIndices& indices)
   {
     return Planner::MapCoordinates{
-      (indices.x - (wrappedMapData_.size[0]-1)/2) * 10,
-      (indices.y - (wrappedMapData_.size[1]-1)/2) * 10,
-      (indices.z - (wrappedMapData_.size[2]-1)/2) * 10
+      (double) (indices.x - (wrappedMapData_->size[0]-1)/2) * 10,
+      (double) (indices.y - (wrappedMapData_->size[1]-1)/2) * 10,
+      (double) (indices.z - (wrappedMapData_->size[2]-1)/2) * 10
     };
   }
 
