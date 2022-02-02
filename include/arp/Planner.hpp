@@ -40,6 +40,9 @@ class Planner
     Vertex* previous;
     double distance = -1;
     double distanceEstimate = -1;
+    bool operator< (const Vertex& rhs) {
+      return distanceEstimate < rhs.distanceEstimate;
+    }
   };
 
   void a_star();
@@ -48,9 +51,11 @@ class Planner
   cv::Mat* wrappedMapData_;
   Vertex* start_;
   Vertex* goal_;
+  MapCoordinates goalCoordinates_;
 
-  MapIndices coordinatesToIndices (MapCoordinates&);
-  MapCoordinates indicesToCoordinates (MapIndices&);
+  MapIndices coordinatesToIndices (MapCoordinates& coordinates);
+  MapCoordinates indicesToCoordinates (MapIndices& indices);
+  double distanceEstimate (Vertex& vertex);
 
 };
 
