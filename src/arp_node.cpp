@@ -473,7 +473,9 @@ to delete[] in the end!
     }
     else if (autopilot.isAutomatic()) {
       if (modeChanged) {
-        if (autopilot.getPoseReference(x, y, z, yaw)) marker.activate(x, y, z, yaw);
+        if (autopilot.getPoseReference(x, y, z, yaw)) {
+          marker.activate(x, y, z, yaw);
+        }
         modeChanged = false;
       }
     }

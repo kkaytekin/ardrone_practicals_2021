@@ -124,6 +124,7 @@ class Autopilot {
   /// \brief Get occupancy map data path
   // Not using currently, but would use for an implementation within autopilot later.
   std::string getOccupancyMap();
+
   /// \brief A Helper struct to send lists of waypoints.
   struct Waypoint {
     double x; ///< The World frame x coordinate.
