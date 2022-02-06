@@ -186,6 +186,15 @@ std::string Autopilot::getOccupancyMap() {
 void Autopilot::controllerCallback(uint64_t timeMicroseconds,
                                   const arp::kinematics::RobotState& x)
 {
+  // TODO: Ask - Would it be beneficial to use mutex for the whole callback? what would be the drawbacks?
+  // TODO: remove the debug controller feature, as well as interactive marker before sending the code
+  // Set to true to use interactive marker if you want to tune the controller again by using it.
+  bool debugController = false;
+  //  NOTE: interactive marker will keep setting position reference to the position of the marker. Now im letting it stay if we want to use it for controller tuning.
+  //  until we reach final waypoint, it is harmless. we keep setting the current waypoint as reference before sending to controlller anyway.
+  //  but when the waypoints list becomes empty, it will want to go to the place where interactive marker is.
+  //  we best remove it entirely from the main body in arp_node.cpp
+
   // only do anything here, if automatic
   const double yaw = kinematics::yawAngle(x.q_WS);
   if (!isAutomatic_) {
@@ -204,8 +213,25 @@ void Autopilot::controllerCallback(uint64_t timeMicroseconds,
   kinematics::Transformation T_WS(x.t_WS, x.q_WS);
   Eigen::Matrix3d R_SW = T_WS.R().transpose();
   Eigen::Vector3d posRef;
+  // TODO: Ask: why the following if statement should be within lock_guard block?
+  //   in our version, if the distance to waypoint is still greater than posTolerance,
+  //   we just keep setting the same position as our reference. no harm done even if the mutex is not locked.
+  if(!waypoints_.empty() && !debugController) {
+    setPoseReference(waypoints_[0].x,
+                     waypoints_[0].y,
+                     waypoints_[0].z,
+                     waypoints_[0].yaw);
+  }
   posRef << ref_x_, ref_y_ , ref_z_;
   Eigen::Vector3d posError = R_SW * (posRef - x.t_WS);
+  // if (posError.squaredNorm() < waypoints_[0].posTolerance ) std::call_once(waypointpopper_,[this](){waypoints_.pop_front();});
+  {
+    if (!waypoints_.empty() && !debugController){
+    std::lock_guard<std::mutex> l(waypointMutex_);
+    // TODO: Do we compare L2 distance or Manhattan distance?
+    if (posError.squaredNorm() < waypoints_[0].posTolerance ) waypoints_.pop_front();
+    }
+  }
   double yawError = (ref_yaw_ - yaw);
   // Ensure yawError \in [-pi,pi]
   yawError = std::fmod(yawError + M_PI , 2*M_PI);
