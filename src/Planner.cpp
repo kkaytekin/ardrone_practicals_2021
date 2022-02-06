@@ -53,6 +53,16 @@ namespace arp {
       // go through 6 neighboring vertices (*NOT* the 26 neighboring!)
       for (int i=0; i<6; i++) {
         MapIndices neighborIndex = neighborIndices_[i];
+        // skip if index out of bounds
+        if (current.idx.x + neighborIndex.x < 0 ||
+            current.idx.x + neighborIndex.x > wrappedMapData_->size[0] ||
+            current.idx.y + neighborIndex.y < 0 ||
+            current.idx.y + neighborIndex.y > wrappedMapData_->size[1] ||
+            current.idx.z + neighborIndex.z < 0 ||
+            current.idx.z + neighborIndex.z > wrappedMapData_->size[2]
+        ) {
+          continue;
+        }
         // skip neighbor if occupied (i.e. log-odds > -5)
         if ((int)wrappedMapData_->at<char>(
           current.idx.x + neighborIndex.x,
@@ -105,7 +115,7 @@ namespace arp {
         0,  // yaw angle
         10  // tolerance
       };
-      waypoints.push_back(waypoint);
+      waypoints.push_front(waypoint);
       current = current->previous;
     }
   }
