@@ -224,12 +224,10 @@ void Autopilot::controllerCallback(uint64_t timeMicroseconds,
   }
   posRef << ref_x_, ref_y_ , ref_z_;
   Eigen::Vector3d posError = R_SW * (posRef - x.t_WS);
-  // if (posError.squaredNorm() < waypoints_[0].posTolerance ) std::call_once(waypointpopper_,[this](){waypoints_.pop_front();});
-  {
-    if (!waypoints_.empty() && !debugController){
+  if (!waypoints_.empty() && !debugController) {
     std::lock_guard<std::mutex> l(waypointMutex_);
-    // TODO: Do we compare L2 distance or Manhattan distance?
-    if (posError.squaredNorm() < waypoints_[0].posTolerance ) waypoints_.pop_front();
+    if (posError.squaredNorm() < waypoints_[0].posTolerance) {
+      waypoints_.pop_front();
     }
   }
   double yawError = (ref_yaw_ - yaw);
