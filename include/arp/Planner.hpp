@@ -54,15 +54,15 @@ class Planner
  protected:
   cv::Mat* wrappedMapData_;
   cv::Mat distanceMatrix_;
-  Vertex* start_;
-  Vertex* goal_;
+  Vertex start_;
+  Vertex goal_;
   MapCoordinates goalCoordinates_;
   MapCoordinates startCoordinates_;
   MapIndices neighborIndices_[];
 
   MapIndices coordinatesToIndices (MapCoordinates& coordinates);
   MapCoordinates indicesToCoordinates (MapIndices& indices);
-  double distanceEstimate (Vertex* vertex);
+  double distanceEstimate (Vertex vertex);
 
 };
 
