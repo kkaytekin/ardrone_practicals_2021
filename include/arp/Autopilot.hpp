@@ -150,6 +150,12 @@ class Autopilot {
     return waypoints_.size();
   }
 
+  /// \brief Set the status for fly challenge
+  void setFlightChallenge(const bool& status) {
+    std::lock_guard<std::mutex> l(waypointMutex_);
+    flightChallenge_ = status;
+  }
+
  protected:
   /// \brief Move the drone.
   /// @param[in] forward Forward tilt [-1,...,1] scaling the maximum tilt ROS parameter.
@@ -194,6 +200,8 @@ class Autopilot {
 
   std::deque<Waypoint> waypoints_;  ///< A list of waypoints that will be approached, if not empty.
   std::mutex waypointMutex_;  ///< We need to lock the waypoint access due to asynchronous arrival.
+
+  bool flightChallenge_ = false;
 };
 
 } // namespace arp

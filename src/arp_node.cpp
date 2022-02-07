@@ -204,12 +204,11 @@ to delete[] in the end!
   visualInertialTracker.setControllerCallback(
           std::bind(&arp::Autopilot::controllerCallback, &autopilot,
                     std::placeholders::_1, std::placeholders::_2));
-
+  std::cout << "Controller callback set\n";
   // Initialize planner
   arp::Planner planner(wrappedMapData,goalPos[0],goalPos[1],goalPos[2],
                        startPos[0],startPos[1],startPos[2]);
-  // Push planner output to controller
-
+  std::cout << "Planner initialized\n";
   // enter main event loop
   std::cout << "===== Hello AR Drone ====" << std::endl;
 
@@ -404,13 +403,27 @@ to delete[] in the end!
     // Automatic Mode
     if (state[SDL_SCANCODE_RCTRL]) {
       std::cout << "Drone navigation set to automatic..." << std::endl;
+      // autopilot.setFlightChallenge(false);
       autopilot.setAutomatic();
     }
     // Manual Mode
     if (state[SDL_SCANCODE_SPACE]) {
       std::cout << "Drone navigation set to manual..." << std::endl;
+      autopilot.setFlightChallenge(false);
       autopilot.setManual();
     }
+    // Fly Challenge Mode
+    if (state[SDL_SCANCODE_P]) {
+      std::cout << "Drone navigation set to manual..." << std::endl;
+      autopilot.setAutomatic();
+      autopilot.setFlightChallenge(true);
+      // Push planner output to controller
+      // do astar search
+      planner.aStar();
+      // set the flyPath
+      autopilot.flyPath(planner.getWaypoints());
+    }
+
 
     if (!autopilot.isAutomatic()) {
 
