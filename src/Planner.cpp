@@ -56,11 +56,11 @@ namespace arp {
         MapIndices neighborIndex = neighborIndices_[i];
         // skip if index out of bounds
         if (current.idx.x + neighborIndex.x < 0 ||
-            current.idx.x + neighborIndex.x > wrappedMapData_->size[0] ||
+            current.idx.x + neighborIndex.x >= wrappedMapData_->size[0] ||
             current.idx.y + neighborIndex.y < 0 ||
-            current.idx.y + neighborIndex.y > wrappedMapData_->size[1] ||
+            current.idx.y + neighborIndex.y >= wrappedMapData_->size[1] ||
             current.idx.z + neighborIndex.z < 0 ||
-            current.idx.z + neighborIndex.z > wrappedMapData_->size[2]
+            current.idx.z + neighborIndex.z >= wrappedMapData_->size[2]
         ) {
           continue;
         }
