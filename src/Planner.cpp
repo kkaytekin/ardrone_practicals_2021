@@ -15,8 +15,9 @@ namespace arp {
   Planner::Planner(cv::Mat & Map,
                    double x_goal, double y_goal, double z_goal,
                    double x_start = 0, double y_start = 0, double z_start = 0)
+                   : wrappedMapData_{&Map}, goalCoordinates_{x_goal,y_goal,z_goal}, startCoordinates_{x_start, y_start, z_start}
   {
-    cv::Mat* wrappedMapData_ = &Map;
+    //cv::Mat* wrappedMapData_ = &Map;
     cv::Mat distanceMatrix_(3, wrappedMapData_->size, CV_64F, cv::Scalar(-1));
     MapIndices neighborIndices_[6] = {
       {-1, 0, 0},
@@ -27,13 +28,13 @@ namespace arp {
       {0, 0, +1}
     };
 
-    MapCoordinates startCoordinates = {x_start, y_start, z_start};
-    start_->idx = coordinatesToIndices(startCoordinates);
+    //MapCoordinates startCoordinates = {x_start, y_start, z_start};
+    start_->idx = coordinatesToIndices(startCoordinates_);
     start_->previous = start_;
 
-    MapCoordinates goalCoordinates = {x_goal, y_goal, z_goal};
-    goalCoordinates_ = goalCoordinates;
-    goal_->idx = coordinatesToIndices(goalCoordinates);
+    //MapCoordinates goalCoordinates = {x_goal, y_goal, z_goal};
+    //goalCoordinates_ = goalCoordinates;
+    goal_->idx = coordinatesToIndices(goalCoordinates_);
     goal_->previous = goal_;
   }
 

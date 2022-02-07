@@ -43,6 +43,13 @@
     <param name="map" value="okvis2-slam-final_map_garching_new2.csv" />
     <!--param name="occupancymap" value="occupancy-map_skokloster.dat" /-->
     <param name="occupancymap" value="occupancy-map_garching.dat" />
+
+    <!-- Parameter for final task -->
+
+    <!-- Starting waypoint -->
+    <rosparam param="startPos">[0.0,0.0,0.0]</rosparam>
+    <!-- Ending waypoint -->
+    <rosparam param="goalPos">[0.0,1.0,2.0]</rosparam>
   </node>
 
 </launch>

@@ -19,9 +19,9 @@ class Planner
  public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
   
-  Planner(cv::Mat & Map,
+  Planner(cv::Mat& Map,
           double x_goal, double y_goal, double z_goal,
-          double x_start = 0, double y_start = 0, double z_start = 0);
+          double x_start , double y_start , double z_start );
   
   struct MapIndices {
     int x;
@@ -57,6 +57,7 @@ class Planner
   Vertex* start_;
   Vertex* goal_;
   MapCoordinates goalCoordinates_;
+  MapCoordinates startCoordinates_;
   MapIndices neighborIndices_[];
 
   MapIndices coordinatesToIndices (MapCoordinates& coordinates);

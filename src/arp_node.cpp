@@ -24,6 +24,7 @@
 #include <arp/StatePublisher.hpp>
 #include <arp/ViEkf.hpp>
 #include <arp/VisualInertialTracker.hpp>
+#include <arp/Planner.hpp>
 
 //Sheet 4
 #include <arp/InteractiveMarkerServer.hpp>
@@ -191,19 +192,23 @@ to delete[] in the end!
   ros::Subscriber subImu = nh.subscribe(
       "ardrone/imu", 50, &Subscriber::imuCallback, &subscriber);
 
-
-
-  // interactive marker for pose control
-  arp::InteractiveMarkerServer marker(autopilot,wrappedMapData, sizes);
-  marker.activate(0.0,0.0,0.0,0.0);
-  // Track if we switched to automatic mode to reset marker
-  bool modeChanged = false;
-  // These variables will be used to set the marker to current location
-  double x{0}, y{0}, z{0}, yaw{0};
+  // Get start and goal waypoints
+  std::vector<double> startPos;
+  std::vector<double> goalPos;
+  bool check = nh.getParam("/arp_node/startPos", startPos);
+  std::cout << "getting start pos: " << (check ? "success\n" : "fail\n");
+  check = nh.getParam("/arp_node/goalPos", goalPos);
+  std::cout << "getting end pos: " << (check ? "success\n" : "fail\n");
+  std::cout << "x,y,z: " << goalPos[0] <<' '<< goalPos[1] <<' '<< goalPos[2] << '\n';
   // Set controller callback
   visualInertialTracker.setControllerCallback(
           std::bind(&arp::Autopilot::controllerCallback, &autopilot,
                     std::placeholders::_1, std::placeholders::_2));
+
+  // Initialize planner
+  arp::Planner planner(wrappedMapData,goalPos[0],goalPos[1],goalPos[2],
+                       startPos[0],startPos[1],startPos[2]);
+  // Push planner output to controller
 
   // enter main event loop
   std::cout << "===== Hello AR Drone ====" << std::endl;
@@ -400,7 +405,6 @@ to delete[] in the end!
     if (state[SDL_SCANCODE_RCTRL]) {
       std::cout << "Drone navigation set to automatic..." << std::endl;
       autopilot.setAutomatic();
-      modeChanged = true;
     }
     // Manual Mode
     if (state[SDL_SCANCODE_SPACE]) {
@@ -472,12 +476,7 @@ to delete[] in the end!
       }
     }
     else if (autopilot.isAutomatic()) {
-      if (modeChanged) {
-        if (autopilot.getPoseReference(x, y, z, yaw)) {
-          marker.activate(x, y, z, yaw);
-        }
-        modeChanged = false;
-      }
+
     }
   }
 
