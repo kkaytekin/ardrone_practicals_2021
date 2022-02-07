@@ -207,58 +207,60 @@ void Autopilot::controllerCallback(uint64_t timeMicroseconds,
   // 3: Flying, 4: Hovering, 7: Flying2
   if (status == DroneStatus::Flying ||
       status == DroneStatus::Hovering ||
-      status == DroneStatus::Flying2) {} // keep going
-  else return; // else terminate
-  // Calculate error
-  kinematics::Transformation T_WS(x.t_WS, x.q_WS);
-  Eigen::Matrix3d R_SW = T_WS.R().transpose();
-  Eigen::Vector3d posRef;
-  // TODO: Ask: why the following if statement should be within lock_guard block?
-  //   in our version, if the distance to waypoint is still greater than posTolerance,
-  //   we just keep setting the same position as our reference. no harm done even if the mutex is not locked.
-  if(!waypoints_.empty() && !debugController) {
-    setPoseReference(waypoints_[0].x,
-                     waypoints_[0].y,
-                     waypoints_[0].z,
-                     waypoints_[0].yaw);
-  }
-  posRef << ref_x_, ref_y_ , ref_z_;
-  Eigen::Vector3d posError = R_SW * (posRef - x.t_WS);
-  if (!waypoints_.empty() && !debugController) {
-    std::lock_guard<std::mutex> l(waypointMutex_);
-    if (posError.squaredNorm() < waypoints_[0].posTolerance) {
-      waypoints_.pop_front();
+      status == DroneStatus::Flying2) {
+    if (flightChallenge_) {
+      kinematics::Transformation T_WS(x.t_WS, x.q_WS);
+      Eigen::Matrix3d R_SW = T_WS.R().transpose();
+      Eigen::Vector3d posRef;
+      // TODO: Ask: why the following if statement should be within lock_guard block?
+      //   in our version, if the distance to waypoint is still greater than posTolerance,
+      //   we just keep setting the same position as our reference. no harm done even if the mutex is not locked.
+      if(!waypoints_.empty() && !debugController) {
+        setPoseReference(waypoints_[0].x,
+                         waypoints_[0].y,
+                         waypoints_[0].z,
+                         waypoints_[0].yaw);
+      }
+      posRef << ref_x_, ref_y_ , ref_z_;
+      Eigen::Vector3d posError = R_SW * (posRef - x.t_WS);
+      if (!waypoints_.empty() && !debugController) {
+        std::lock_guard<std::mutex> l(waypointMutex_);
+        if (posError.squaredNorm() < waypoints_[0].posTolerance) {
+          waypoints_.pop_front();
+        }
+      }
+      double yawError = (ref_yaw_ - yaw);
+      // Ensure yawError \in [-pi,pi]
+      yawError = std::fmod(yawError + M_PI , 2*M_PI);
+      if (yawError < 0.0) yawError += 2*M_PI;
+      yawError -= M_PI;
+      // Calculate error derivatives
+      Eigen::Vector3d dPosError = - R_SW * x.v_W;
+      double dYawError = 0.0;
+      // Set limits for controller output
+      if(!nh_->getParam("/ardrone_driver/euler_angle_max",euler_angle_max_))
+        std::cout << "Warning: Couldn't get controller boundary value: max angle\n";
+      if(!nh_->getParam("/ardrone_driver/control_vz_max",control_vz_max_))
+        std::cout << "Warning: Couldn't get controller boundary value: max velocity\n";
+      if(!nh_->getParam("/ardrone_driver/control_yaw",control_yaw_max_))
+        std::cout << "Warning: Couldn't get controller boundary value: max yaw\n";
+      // Set controllers with these limits:
+      rollAngPid.setOutputLimits(-euler_angle_max_,euler_angle_max_); // roll angle pid
+      pitchAngPid.setOutputLimits(-euler_angle_max_,euler_angle_max_);
+      yawPid.setOutputLimits(-control_yaw_max_,control_yaw_max_);
+      control_vz_max_ /= 1000; // Convert from mm/s to m/s
+      zPid.setOutputLimits(-control_vz_max_,control_vz_max_);
+      // DONE: compute control output
+      double u_y   = rollAngPid.control(timeMicroseconds,posError[1],dPosError[1]);
+      double u_x   = pitchAngPid.control(timeMicroseconds,posError[0],dPosError[0]);
+      double u_z   = zPid.control(timeMicroseconds,posError[2],dPosError[2]);
+      double u_yaw = yawPid.control(timeMicroseconds,yawError,dYawError);
+      // std::cout << "u_ x, y, z , w: " << u_x << ' ' << u_y << ' ' << u_z << ' ' << u_yaw  << '\n';
+      // DONE: send to move
+      if(!move(u_x,u_y,u_z,u_yaw)) std::cout << "Automatic movement: [FAIL]\n";
     }
-  }
-  double yawError = (ref_yaw_ - yaw);
-  // Ensure yawError \in [-pi,pi]
-  yawError = std::fmod(yawError + M_PI , 2*M_PI);
-  if (yawError < 0.0) yawError += 2*M_PI;
-  yawError -= M_PI;
-  // Calculate error derivatives
-  Eigen::Vector3d dPosError = - R_SW * x.v_W;
-  double dYawError = 0.0;
-  // Set limits for controller output
-  if(!nh_->getParam("/ardrone_driver/euler_angle_max",euler_angle_max_))
-    std::cout << "Warning: Couldn't get controller boundary value: max angle\n";
-  if(!nh_->getParam("/ardrone_driver/control_vz_max",control_vz_max_))
-    std::cout << "Warning: Couldn't get controller boundary value: max velocity\n";
-  if(!nh_->getParam("/ardrone_driver/control_yaw",control_yaw_max_))
-    std::cout << "Warning: Couldn't get controller boundary value: max yaw\n";
-  // Set controllers with these limits:
-  rollAngPid.setOutputLimits(-euler_angle_max_,euler_angle_max_); // roll angle pid
-  pitchAngPid.setOutputLimits(-euler_angle_max_,euler_angle_max_);
-  yawPid.setOutputLimits(-control_yaw_max_,control_yaw_max_);
-  control_vz_max_ /= 1000; // Convert from mm/s to m/s
-  zPid.setOutputLimits(-control_vz_max_,control_vz_max_);
-  // DONE: compute control output
-  double u_y   = rollAngPid.control(timeMicroseconds,posError[1],dPosError[1]);
-  double u_x   = pitchAngPid.control(timeMicroseconds,posError[0],dPosError[0]);
-  double u_z   = zPid.control(timeMicroseconds,posError[2],dPosError[2]);
-  double u_yaw = yawPid.control(timeMicroseconds,yawError,dYawError);
-  // std::cout << "u_ x, y, z , w: " << u_x << ' ' << u_y << ' ' << u_z << ' ' << u_yaw  << '\n';
-  // DONE: send to move
-  if(!move(u_x,u_y,u_z,u_yaw)) std::cout << "Automatic movement: [FAIL]\n";
+  } // keep going
+  else return; // else terminate
 }
 
 // Some functions for debugging
