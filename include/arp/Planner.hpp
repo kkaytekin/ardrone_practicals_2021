@@ -40,10 +40,10 @@ class Planner
     Vertex* previous = 0;  // 0 means undefined
     double distance = -1;
     double distanceEstimate = -1;
-    bool operator< (const Vertex& rhs) {
+    bool operator< (const Vertex& rhs) const {
       return distanceEstimate < rhs.distanceEstimate;
     }
-    bool operator== (const Vertex& rhs) {
+    bool operator== (const Vertex& rhs) const {
       return (idx.x == rhs.idx.x) && (idx.y == rhs.idx.y) && (idx.z == rhs.idx.z);
     }
   };
