@@ -26,8 +26,9 @@ namespace arp {
   double Planner::aStar ()
   {
     // return -1 if goal occupied
-    if ((int)wrappedMapData_->at<char>(goal_.idx.x, goal_.idx.y, goal_.idx.z) > 0) {
-      std::cout << "Goal is occupied space!" << std::endl;
+
+    if (isOccupied(goal_.idx.x, goal_.idx.y, goal_.idx.z)) {
+      std::cout << "Goal is in occupied space!" << std::endl;
       return -1;
     }
 
@@ -60,12 +61,12 @@ namespace arp {
           std::cout << "skipped " << i << "\n";
           continue;
         }
-        // skip neighbor if occupied (i.e. log-odds > -5)
-        if ((int)wrappedMapData_->at<char>(
+        // skip neighbor if occupied
+        if (isOccupied(
           current.idx.x + neighborIndex.x,
           current.idx.y + neighborIndex.y,
           current.idx.z + neighborIndex.z
-        ) > 0) {
+        )) {
           continue;
         }
         // hardcoded neighbor distance = 10 (not valid for 26 neighbors!)
@@ -144,6 +145,14 @@ namespace arp {
       (double) (indices.y - (wrappedMapData_->size[1]-1)/2) * 10,
       (double) (indices.z - (wrappedMapData_->size[2]-1)/2) * 10
     };
+  }
+
+  // Inputs: i,j,k: Indices of a position
+  bool Planner::isOccupied(const int& i, const int& j, const int& k) {
+    if ((int)wrappedMapData_->at<char>(i,j,k) < 0 && (int)wrappedMapData_->at<char>(i,j,k) > -128)
+      return false;
+    else
+      return true;
   }
 
 }  // namespace arp

@@ -50,6 +50,7 @@ class Planner
 
   double aStar();
   std::deque<arp::Autopilot::Waypoint> getWaypoints();
+  bool isOccupied(const int& i, const int& j, const int& k);
 
   MapIndices neighborIndices_[6] = {
     {-1, 0, 0},
