@@ -348,12 +348,6 @@ to delete[] in the end!
     //Multiple Key Capture Begins
     const Uint8 *state = SDL_GetKeyboardState(NULL);
 
-    // check states!
-    // auto droneStatus = autopilot.droneStatus();
-
-    std::cout << "the current state x,y,z: " << autopilot.currentRobotState.x() << ' '
-              << autopilot.currentRobotState.y() << ' ' << autopilot.currentRobotState.z() << '\n';
-
     // command
     if (state[SDL_SCANCODE_ESCAPE]) {
       std::cout << "ESTOP PRESSED, SHUTTING OFF ALL MOTORS status=" << droneStatus;
@@ -418,8 +412,10 @@ to delete[] in the end!
       autopilot.setAutomatic();
       autopilot.setFlightChallenge(true);
       // Initialize planner
-      arp::Planner planner(wrappedMapData, goalPos[0], goalPos[1], goalPos[2],
-                           startPos[0], startPos[1], startPos[2]);
+      arp::Planner planner(
+        wrappedMapData, goalPos[0], goalPos[1], goalPos[2],
+        autopilot.currentRobotState.x(), autopilot.currentRobotState.y(), autopilot.currentRobotState.z()
+      );
       std::cout << "Planner initialized\n";
       // do A* search
       double distance = planner.aStar();
