@@ -414,8 +414,6 @@ to delete[] in the end!
       std::cout << "Drone navigation set to challenge..." << std::endl;
       autopilot.setAutomatic();
       autopilot.setFlightChallenge(true);
-      // takeoff
-      autopilot.takeoff();
       // Initialize planner
       arp::Planner planner(wrappedMapData, goalPos[0], goalPos[1], goalPos[2],
                            startPos[0], startPos[1], startPos[2]);

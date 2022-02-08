@@ -34,7 +34,7 @@ namespace arp {
   double Planner::aStar ()
   {
     // return -1 if goal occupied
-    if ((int)wrappedMapData_->at<char>(goal_.idx.x, goal_.idx.y, goal_.idx.z) > -5) {
+    if ((int)wrappedMapData_->at<char>(goal_.idx.x, goal_.idx.y, goal_.idx.z) > 0) {
       std::cout << "Goal is occupied space!" << std::endl;
       return -1;
     }
@@ -51,6 +51,7 @@ namespace arp {
 
     while (!openSet.empty()) {
       Planner::Vertex current = *openSet.begin();
+      std::cout << current.idx.x << " " << current.idx.y << "\n";
       if (current == goal_) {
         return current.distance;
       }
@@ -59,12 +60,13 @@ namespace arp {
         MapIndices neighborIndex = neighborIndices_[i];
         // skip if index out of bounds
         if (current.idx.x + neighborIndex.x < 0 ||
-            current.idx.x + neighborIndex.x >= wrappedMapData_->size[0] ||
+            current.idx.x + neighborIndex.x >= size[0] ||
             current.idx.y + neighborIndex.y < 0 ||
-            current.idx.y + neighborIndex.y >= wrappedMapData_->size[1] ||
+            current.idx.y + neighborIndex.y >= size[1] ||
             current.idx.z + neighborIndex.z < 0 ||
-            current.idx.z + neighborIndex.z >= wrappedMapData_->size[2]
+            current.idx.z + neighborIndex.z >= size[2]
         ) {
+          //std::cout << i << " skipped  ";
           continue;
         }
         // skip neighbor if occupied (i.e. log-odds > -5)
@@ -72,7 +74,7 @@ namespace arp {
           current.idx.x + neighborIndex.x,
           current.idx.y + neighborIndex.y,
           current.idx.z + neighborIndex.z
-        ) > -5) {
+        ) > 0) {
           continue;
         }
         // hardcoded neighbor distance = 10 (not valid for 26 neighbors!)
