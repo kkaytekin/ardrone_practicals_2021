@@ -19,9 +19,6 @@ namespace arp {
   {
     start_.idx = coordinatesToIndices(startCoordinates_);
     goal_.idx = coordinatesToIndices(goalCoordinates_);
-
-    std::cout << "start idx: " << start_.idx.x << " " << start_.idx.y << " " << start_.idx.z << "\n";
-    std::cout << " goal idx: " <<  goal_.idx.x << " " <<  goal_.idx.y << " " <<  goal_.idx.z << "\n";
   }
 
   double Planner::aStar (std::deque<Autopilot::Waypoint>* waypoints)
@@ -35,7 +32,7 @@ namespace arp {
     bool foundGoal = false;
     double distance;
     std::set<Planner::Vertex> openSet;
-    std::vector<Planner::Vertex> vertices(200);
+    std::vector<Planner::Vertex> vertices(100000);
     start_.distance = 0;
     int size[3] = {wrappedMapData_->size[0], wrappedMapData_->size[1], wrappedMapData_->size[2]};
     cv::Mat distanceMatrix(3, size, CV_64F, std::numeric_limits<double>::infinity());
@@ -110,7 +107,7 @@ namespace arp {
     if (foundGoal) {
       Planner::Vertex* current = &goal_;
       while (true) {
-        if (current == &vertices.front()) {  // == &start basically
+        if (*current == start_) {
           return distance;
         }
         Planner::MapCoordinates coordinates = indicesToCoordinates(current->idx);
@@ -122,8 +119,6 @@ namespace arp {
           10  // tolerance
         };
         waypoints->push_front(waypoint);
-
-        std::cout << current->idx.x << " " << current->idx.y << " " << current->idx.z << "\n";
         current = current->previous;
       }
       return distance;
@@ -175,9 +170,9 @@ namespace arp {
   Planner::MapCoordinates Planner::indicesToCoordinates (Planner::MapIndices& indices)
   {
     return Planner::MapCoordinates{
-      (double) (indices.x - (wrappedMapData_->size[0]-1)/2) * 10,
-      (double) (indices.y - (wrappedMapData_->size[1]-1)/2) * 10,
-      (double) (indices.z - (wrappedMapData_->size[2]-1)/2) * 10
+      (double) (indices.x - (wrappedMapData_->size[0]-1)/2) * 0.1,
+      (double) (indices.y - (wrappedMapData_->size[1]-1)/2) * 0.1,
+      (double) (indices.z - (wrappedMapData_->size[2]-1)/2) * 0.1
     };
   }
 
