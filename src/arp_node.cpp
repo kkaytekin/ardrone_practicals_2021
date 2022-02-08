@@ -418,11 +418,12 @@ to delete[] in the end!
       );
       std::cout << "Planner initialized\n";
       // do A* search
-      double distance = planner.aStar();
+      std::deque<arp::Autopilot::Waypoint> waypoints;
+      double distance = planner.aStar(&waypoints);
       std::cout << "Planning done - distance to fly: " << distance << std::endl;
       // set the flyPath if the planner found a path
       if (distance != -1) {
-        autopilot.flyPath(planner.getWaypoints());
+        autopilot.flyPath(waypoints);
       }
     }
 

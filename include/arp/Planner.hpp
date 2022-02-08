@@ -48,7 +48,7 @@ class Planner
     }
   };
 
-  double aStar();
+  double aStar(std::deque<Autopilot::Waypoint>* waypoints);
   std::deque<arp::Autopilot::Waypoint> getWaypoints();
   bool isOccupied(const int& i, const int& j, const int& k);
 
@@ -67,11 +67,11 @@ class Planner
   Vertex goal_;
   MapCoordinates goalCoordinates_;
   MapCoordinates startCoordinates_;
+  std::vector<Vertex> vertices_;
 
   MapIndices coordinatesToIndices (MapCoordinates& coordinates);
   MapCoordinates indicesToCoordinates (MapIndices& indices);
   double distanceEstimate (Vertex vertex);
-
 };
 
 }  // namespace arp

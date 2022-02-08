@@ -18,21 +18,24 @@ namespace arp {
                    : wrappedMapData_{&Map}, goalCoordinates_{x_goal,y_goal,z_goal}, startCoordinates_{x_start, y_start, z_start}
   {
     start_.idx = coordinatesToIndices(startCoordinates_);
-    start_.previous = &start_;
     goal_.idx = coordinatesToIndices(goalCoordinates_);
-    goal_.previous = &goal_;
+
+    std::cout << "start idx: " << start_.idx.x << " " << start_.idx.y << " " << start_.idx.z << "\n";
+    std::cout << " goal idx: " <<  goal_.idx.x << " " <<  goal_.idx.y << " " <<  goal_.idx.z << "\n";
   }
 
-  double Planner::aStar ()
+  double Planner::aStar (std::deque<Autopilot::Waypoint>* waypoints)
   {
     // return -1 if goal occupied
-
     if (isOccupied(goal_.idx.x, goal_.idx.y, goal_.idx.z)) {
       std::cout << "Goal is in occupied space!" << std::endl;
       return -1;
     }
 
+    bool foundGoal = false;
+    double distance;
     std::set<Planner::Vertex> openSet;
+    std::vector<Planner::Vertex> vertices(200);
     start_.distance = 0;
     int size[3] = {wrappedMapData_->size[0], wrappedMapData_->size[1], wrappedMapData_->size[2]};
     cv::Mat distanceMatrix(3, size, CV_64F, std::numeric_limits<double>::infinity());
@@ -42,9 +45,11 @@ namespace arp {
 
     while (!openSet.empty()) {
       Planner::Vertex current = *openSet.begin();
+      vertices.push_back(current);
       openSet.erase(openSet.begin());
       if (current == goal_) {
-        return current.distance;
+        distance = current.distance;
+        break;
       }
       // go through 6 neighboring vertices (*NOT* the 26 neighboring!)
       for (int i=0; i<6; i++) {
@@ -86,13 +91,44 @@ namespace arp {
             current.idx.y + neighborIndex.y,
             current.idx.z + neighborIndex.z
           };
-          newVertex.distance = alt;
-          newVertex.distanceEstimate = alt + distanceEstimate(newVertex);
-          newVertex.previous = &current;
-          openSet.insert(newVertex);
+          if (newVertex == goal_) {
+            foundGoal = true;
+            goal_.distance = alt;
+            goal_.distanceEstimate = alt;
+            goal_.previous = &vertices.back();
+            openSet.insert(goal_);
+          } else {
+            newVertex.distance = alt;
+            newVertex.distanceEstimate = alt + distanceEstimate(newVertex);
+            newVertex.previous = &vertices.back();
+            openSet.insert(newVertex);
+          }
         }
       }
     }
+
+    if (foundGoal) {
+      Planner::Vertex* current = &goal_;
+      while (true) {
+        if (current == &vertices.front()) {  // == &start basically
+          return distance;
+        }
+        Planner::MapCoordinates coordinates = indicesToCoordinates(current->idx);
+        Autopilot::Waypoint waypoint = {
+          coordinates.x,
+          coordinates.y,
+          coordinates.z,
+          0,  // yaw angle
+          10  // tolerance
+        };
+        waypoints->push_front(waypoint);
+
+        std::cout << current->idx.x << " " << current->idx.y << " " << current->idx.z << "\n";
+        current = current->previous;
+      }
+      return distance;
+    }
+
     std::cout << "Could not find path to goal!" << std::endl;
     return -1;
   }
