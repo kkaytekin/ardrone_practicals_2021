@@ -35,7 +35,7 @@ namespace arp {
     std::set<Planner::Vertex> openSet;
     start_.distance = 0;
     int size[3] = {wrappedMapData_->size[0], wrappedMapData_->size[1], wrappedMapData_->size[2]};
-    cv::Mat distanceMatrix(3, size, CV_64F, cv::Scalar(-1));
+    cv::Mat distanceMatrix(3, size, CV_64F, std::numeric_limits<double>::infinity());
     distanceMatrix.at<double>(start_.idx.x, start_.idx.y, start_.idx.z) = 0;
     start_.distanceEstimate = distanceEstimate(start_);
     openSet.insert(start_);
@@ -46,7 +46,6 @@ namespace arp {
       if (current == goal_) {
         return current.distance;
       }
-      std::cout << current.idx.x << " " << current.idx.y << " " << current.idx.z << "\n";
       // go through 6 neighboring vertices (*NOT* the 26 neighboring!)
       for (int i=0; i<6; i++) {
         MapIndices neighborIndex = neighborIndices_[i];
@@ -58,7 +57,6 @@ namespace arp {
             current.idx.z + neighborIndex.z < 0 ||
             current.idx.z + neighborIndex.z >= size[2]
         ) {
-          std::cout << "skipped " << i << "\n";
           continue;
         }
         // skip neighbor if occupied
@@ -71,13 +69,13 @@ namespace arp {
         }
         // hardcoded neighbor distance = 10 (not valid for 26 neighbors!)
         double alt = current.distance + 10;
-        double neighborDistance = distanceMatrix.at<char>(
+        double neighborDistance = distanceMatrix.at<double>(
           current.idx.x + neighborIndex.x,
           current.idx.y + neighborIndex.y,
           current.idx.z + neighborIndex.z
         );
-        if (alt < neighborDistance || neighborDistance == -1) {
-          distanceMatrix.at<char>(
+        if (alt < neighborDistance) {
+          distanceMatrix.at<double>(
             current.idx.x + neighborIndex.x,
             current.idx.y + neighborIndex.y,
             current.idx.z + neighborIndex.z
