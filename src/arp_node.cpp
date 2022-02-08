@@ -259,6 +259,8 @@ to delete[] in the end!
 
     //debug commands
     //autopilot.printRefVals();
+    std::cout << "Current pos. est. x,y,z: " << autopilot.currentRobotState.x() << ' '
+              << autopilot.currentRobotState.y() << ' '<< autopilot.currentRobotState.z() << '\n';
 
     // render image, if there is a new one available
     if(visualInertialTracker.getLastVisualisationImage(originalImage)) {  // subscriber.getLastImage(originalImage
