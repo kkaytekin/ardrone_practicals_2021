@@ -17,8 +17,6 @@ namespace arp {
                    double x_start = 0, double y_start = 0, double z_start = 0)
                    : wrappedMapData_{&Map}, goalCoordinates_{x_goal,y_goal,z_goal}, startCoordinates_{x_start, y_start, z_start}
   {
-    //cv::Mat* wrappedMapData_ = &Map;
-    cv::Mat distanceMatrix_(3, wrappedMapData_->size, CV_64F, cv::Scalar(-1));
     MapIndices neighborIndices_[6] = {
       {-1, 0, 0},
       {+1, 0, 0},
@@ -27,24 +25,29 @@ namespace arp {
       {0, 0, -1},
       {0, 0, +1}
     };
-
-    //MapCoordinates startCoordinates = {x_start, y_start, z_start};
     start_.idx = coordinatesToIndices(startCoordinates_);
     start_.previous = &start_;
-
-    //MapCoordinates goalCoordinates = {x_goal, y_goal, z_goal};
-    //goalCoordinates_ = goalCoordinates;
     goal_.idx = coordinatesToIndices(goalCoordinates_);
     goal_.previous = &goal_;
   }
 
   double Planner::aStar ()
   {
+    // return -1 if goal occupied
+    if ((int)wrappedMapData_->at<char>(goal_.idx.x, goal_.idx.y, goal_.idx.z) > -5) {
+      std::cout << "Goal is occupied space!" << std::endl;
+      return -1;
+    }
+
     std::set<Planner::Vertex> openSet;
     start_.distance = 0;
-    distanceMatrix_.at<char>(start_.idx.x, start_.idx.y, start_.idx.z) = 0;
+    int size[3] = {wrappedMapData_->size[0], wrappedMapData_->size[1], wrappedMapData_->size[2]};
+    cv::Mat distanceMatrix(3, size, CV_64F, cv::Scalar(-1));
+    distanceMatrix.at<double>(start_.idx.x, start_.idx.y, start_.idx.z) = 0;
     start_.distanceEstimate = distanceEstimate(start_);
     openSet.insert(start_);
+
+    std::cout << "Start loop\n";
 
     while (!openSet.empty()) {
       Planner::Vertex current = *openSet.begin();
@@ -74,13 +77,13 @@ namespace arp {
         }
         // hardcoded neighbor distance = 10 (not valid for 26 neighbors!)
         double alt = current.distance + 10;
-        double neighborDistance = distanceMatrix_.at<char>(
+        double neighborDistance = distanceMatrix.at<char>(
           current.idx.x + neighborIndex.x,
           current.idx.y + neighborIndex.y,
           current.idx.z + neighborIndex.z
         );
         if (alt < neighborDistance || neighborDistance == -1) {
-          distanceMatrix_.at<char>(
+          distanceMatrix.at<char>(
             current.idx.x + neighborIndex.x,
             current.idx.y + neighborIndex.y,
             current.idx.z + neighborIndex.z
@@ -98,6 +101,7 @@ namespace arp {
         }
       }
     }
+    std::cout << "Could not find path to goal!" << std::endl;
     return -1;
   }
 

@@ -47,9 +47,9 @@
     <!-- Parameter for final task -->
 
     <!-- Starting waypoint -->
-    <rosparam param="startPos">[0.0,0.0,0.0]</rosparam>
+    <rosparam param="startPos">[0.0, 0.0, 0.5]</rosparam>
     <!-- Ending waypoint -->
-    <rosparam param="goalPos">[0.0,1.0,2.0]</rosparam>
+    <rosparam param="goalPos">[0.5 ,0.5, 0.5]</rosparam>
   </node>
 
 </launch>

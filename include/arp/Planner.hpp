@@ -53,7 +53,6 @@ class Planner
 
  protected:
   cv::Mat* wrappedMapData_;
-  cv::Mat distanceMatrix_;
   Vertex start_;
   Vertex goal_;
   MapCoordinates goalCoordinates_;

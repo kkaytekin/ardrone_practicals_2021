@@ -205,10 +205,7 @@ to delete[] in the end!
           std::bind(&arp::Autopilot::controllerCallback, &autopilot,
                     std::placeholders::_1, std::placeholders::_2));
   std::cout << "Controller callback set\n";
-  // Initialize planner
-  arp::Planner planner(wrappedMapData,goalPos[0],goalPos[1],goalPos[2],
-                       startPos[0],startPos[1],startPos[2]);
-  std::cout << "Planner initialized\n";
+
   // enter main event loop
   std::cout << "===== Hello AR Drone ====" << std::endl;
 
@@ -414,14 +411,22 @@ to delete[] in the end!
     }
     // Fly Challenge Mode
     if (state[SDL_SCANCODE_P]) {
-      std::cout << "Drone navigation set to manual..." << std::endl;
+      std::cout << "Drone navigation set to challenge..." << std::endl;
       autopilot.setAutomatic();
       autopilot.setFlightChallenge(true);
-      // Push planner output to controller
-      // do astar search
-      planner.aStar();
-      // set the flyPath
-      autopilot.flyPath(planner.getWaypoints());
+      // takeoff
+      autopilot.takeoff();
+      // Initialize planner
+      arp::Planner planner(wrappedMapData, goalPos[0], goalPos[1], goalPos[2],
+                           startPos[0], startPos[1], startPos[2]);
+      std::cout << "Planner initialized\n";
+      // do A* search
+      double distance = planner.aStar();
+      std::cout << "Planning done - distance to fly: " << distance << std::endl;
+      // set the flyPath if the planner found a path
+      if (distance != -1) {
+        autopilot.flyPath(planner.getWaypoints());
+      }
     }
 
 
