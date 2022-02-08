@@ -156,6 +156,9 @@ class Autopilot {
     flightChallenge_ = status;
   }
 
+  // DEbug
+  Eigen::Vector3d currentRobotState{0.0,0.0,0.0};
+
  protected:
   /// \brief Move the drone.
   /// @param[in] forward Forward tilt [-1,...,1] scaling the maximum tilt ROS parameter.
