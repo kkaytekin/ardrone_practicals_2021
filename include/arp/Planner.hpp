@@ -51,13 +51,21 @@ class Planner
   double aStar();
   std::deque<arp::Autopilot::Waypoint> getWaypoints();
 
+  MapIndices neighborIndices_[6] = {
+    {-1, 0, 0},
+    {+1, 0, 0},
+    {0, -1, 0},
+    {0, +1, 0},
+    {0, 0, -1},
+    {0, 0, +1}
+  };
+
  protected:
   cv::Mat* wrappedMapData_;
   Vertex start_;
   Vertex goal_;
   MapCoordinates goalCoordinates_;
   MapCoordinates startCoordinates_;
-  MapIndices neighborIndices_[];
 
   MapIndices coordinatesToIndices (MapCoordinates& coordinates);
   MapCoordinates indicesToCoordinates (MapIndices& indices);

@@ -17,14 +17,6 @@ namespace arp {
                    double x_start = 0, double y_start = 0, double z_start = 0)
                    : wrappedMapData_{&Map}, goalCoordinates_{x_goal,y_goal,z_goal}, startCoordinates_{x_start, y_start, z_start}
   {
-    MapIndices neighborIndices_[6] = {
-      {-1, 0, 0},
-      {+1, 0, 0},
-      {0, -1, 0},
-      {0, +1, 0},
-      {0, 0, -1},
-      {0, 0, +1}
-    };
     start_.idx = coordinatesToIndices(startCoordinates_);
     start_.previous = &start_;
     goal_.idx = coordinatesToIndices(goalCoordinates_);
@@ -47,14 +39,13 @@ namespace arp {
     start_.distanceEstimate = distanceEstimate(start_);
     openSet.insert(start_);
 
-    std::cout << "Start loop\n";
-
     while (!openSet.empty()) {
       Planner::Vertex current = *openSet.begin();
-      std::cout << current.idx.x << " " << current.idx.y << "\n";
+      openSet.erase(openSet.begin());
       if (current == goal_) {
         return current.distance;
       }
+      std::cout << current.idx.x << " " << current.idx.y << " " << current.idx.z << "\n";
       // go through 6 neighboring vertices (*NOT* the 26 neighboring!)
       for (int i=0; i<6; i++) {
         MapIndices neighborIndex = neighborIndices_[i];
@@ -66,7 +57,7 @@ namespace arp {
             current.idx.z + neighborIndex.z < 0 ||
             current.idx.z + neighborIndex.z >= size[2]
         ) {
-          //std::cout << i << " skipped  ";
+          std::cout << "skipped " << i << "\n";
           continue;
         }
         // skip neighbor if occupied (i.e. log-odds > -5)
