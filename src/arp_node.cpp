@@ -351,6 +351,9 @@ to delete[] in the end!
     // check states!
     // auto droneStatus = autopilot.droneStatus();
 
+    std::cout << "the current state x,y,z: " << autopilot.currentRobotState.x() << ' '
+              << autopilot.currentRobotState.y() << ' ' << autopilot.currentRobotState.z() << '\n';
+
     // command
     if (state[SDL_SCANCODE_ESCAPE]) {
       std::cout << "ESTOP PRESSED, SHUTTING OFF ALL MOTORS status=" << droneStatus;

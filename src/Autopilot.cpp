@@ -185,7 +185,8 @@ std::string Autopilot::getOccupancyMap() {
 /// The callback from the estimator that sends control outputs to the drone
 void Autopilot::controllerCallback(uint64_t timeMicroseconds,
                                   const arp::kinematics::RobotState& x)
-{
+{ // Debug
+  currentRobotState = x.t_WS;
   // TODO: Ask - Would it be beneficial to use mutex for the whole callback? what would be the drawbacks?
   // TODO: remove the debug controller feature, as well as interactive marker before sending the code
   // Set to true to use interactive marker if you want to tune the controller again by using it.

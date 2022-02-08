@@ -34,7 +34,7 @@ namespace arp {
   double Planner::aStar ()
   {
     // return -1 if goal occupied
-    if ((int)wrappedMapData_->at<char>(goal_.idx.x, goal_.idx.y, goal_.idx.z) > -5) {
+    if ((int)wrappedMapData_->at<char>(goal_.idx.x, goal_.idx.y, goal_.idx.z) > 0) {
       std::cout << "Goal is occupied space!" << std::endl;
       return -1;
     }
@@ -72,7 +72,7 @@ namespace arp {
           current.idx.x + neighborIndex.x,
           current.idx.y + neighborIndex.y,
           current.idx.z + neighborIndex.z
-        ) > -5) {
+        ) > 0) {
           continue;
         }
         // hardcoded neighbor distance = 10 (not valid for 26 neighbors!)
