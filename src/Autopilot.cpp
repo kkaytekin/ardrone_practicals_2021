@@ -31,11 +31,11 @@ Autopilot::Autopilot(ros::NodeHandle& nh)
 
   // Set PID parameters
   PidController::Parameters p;
-  p.k_p=0.2; p.k_i=3.0; p.k_d=0.0;
+  p.k_p=0.2; p.k_i=3.0; p.k_d=0.05;
   rollAngPid.setParameters(p);
-  p.k_p=0.2; p.k_i=3.0; p.k_d=0.0;
+  p.k_p=0.2; p.k_i=3.0; p.k_d=0.05;
   pitchAngPid.setParameters(p);
-  p.k_p=0.8; p.k_i=0.1; p.k_d=0.2;
+  p.k_p=0.04; p.k_i=0.005; p.k_d=0.0;
   yawPid.setParameters(p);
   p.k_p=0.5; p.k_i=0.2; p.k_d=0.1;
   zPid.setParameters(p);
