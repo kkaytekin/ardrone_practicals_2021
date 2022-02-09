@@ -116,7 +116,7 @@ namespace arp {
           coordinates.y,
           coordinates.z,
           0,   // yaw angle
-          0.1  // tolerance
+          0.4  // tolerance
         };
         waypoints->push_front(waypoint);
         current = current->previous;
@@ -126,26 +126,6 @@ namespace arp {
 
     std::cout << "Could not find path to goal!" << std::endl;
     return -1;
-  }
-
-  std::deque<Autopilot::Waypoint> Planner::getWaypoints() {
-    std::deque<Autopilot::Waypoint> waypoints;
-    Planner::Vertex* current = &goal_;
-    while (true) {
-      if (current == &start_) {
-        return waypoints;
-      }
-      Planner::MapCoordinates coordinates = indicesToCoordinates(current->idx);
-      Autopilot::Waypoint waypoint = {
-        coordinates.x,
-        coordinates.y,
-        coordinates.z,
-        0,  // yaw angle
-        0.1  // tolerance
-      };
-      waypoints.push_front(waypoint);
-      current = current->previous;
-    }
   }
 
   double Planner::distanceEstimate (Planner::Vertex vertex)

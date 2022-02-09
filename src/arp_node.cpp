@@ -224,7 +224,7 @@ to delete[] in the end!
   static std::deque<arp::Autopilot::Waypoint> waypoints;
   std::mutex statusMutex;
   // HACK: allow the drone to land by skipping this many iterations:
-  int SKIP_ITERS = 50;
+  int SKIP_ITERS = 200;
   int count_to_skip{0};
 
   while (ros::ok()) {
