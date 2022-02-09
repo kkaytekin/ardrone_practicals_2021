@@ -581,7 +581,7 @@ to delete[] in the end!
       }
       // While inited or landed, if on a mission; takeoff
       if (droneStatus == 1 || droneStatus == 2 && !autopilot.m_objectReached) {
-        if (count_to_takeoff < SKIP_ITERS) {
+        if (count_to_takeoff < SKIP_ITERS/2) {
           ++count_to_takeoff;
           continue;
         }
