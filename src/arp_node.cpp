@@ -223,6 +223,9 @@ to delete[] in the end!
 
   static std::deque<arp::Autopilot::Waypoint> waypoints;
   std::mutex statusMutex;
+  // HACK: allow the drone to land by skipping this many iterations:
+  int SKIP_ITERS = 50;
+  int count_to_skip{0};
 
   while (ros::ok()) {
     ros::spinOnce();
@@ -500,11 +503,16 @@ to delete[] in the end!
       // While flying, if done; land
       if ((droneStatus == 3 || droneStatus == 4 || droneStatus == 7) && autopilot.m_objectReached) {
         std::cout << "Object reached! Landing...    " << (autopilot.land() ? "[OK]\n" : "[FAIL]\n");
+        count_to_skip = 0;
         // Wait 2 seconds
         //sleep(2000);
       }
       // While inited or landed, if on a mission; takeoff
       if (droneStatus == 1 || droneStatus == 2 && !autopilot.m_objectReached) {
+        if (count_to_skip < SKIP_ITERS) {
+          ++count_to_skip;
+          continue;
+        }
         if (autopilot.getStartToGoal() || autopilot.getGoalToStart())
           std::cout << "On mission: " <<  (autopilot.getStartToGoal() ? "Start to goal\n":"Goal to start\n")
           << "Taking off...   " << (autopilot.takeoff() ? "[OK]\n" : "[FAIL]\n");
