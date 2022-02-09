@@ -188,13 +188,6 @@ void Autopilot::controllerCallback(uint64_t timeMicroseconds,
 { // Debug
   currentRobotState = x.t_WS;
   // TODO: Ask - Would it be beneficial to use mutex for the whole callback? what would be the drawbacks?
-  // TODO: remove the debug controller feature, as well as interactive marker before sending the code
-  // Set to true to use interactive marker if you want to tune the controller again by using it.
-  bool debugController = false;
-  //  NOTE: interactive marker will keep setting position reference to the position of the marker. Now im letting it stay if we want to use it for controller tuning.
-  //  until we reach final waypoint, it is harmless. we keep setting the current waypoint as reference before sending to controlller anyway.
-  //  but when the waypoints list becomes empty, it will want to go to the place where interactive marker is.
-  //  we best remove it entirely from the main body in arp_node.cpp
 
   // only do anything here, if automatic
   const double yaw = kinematics::yawAngle(x.q_WS);
@@ -216,20 +209,40 @@ void Autopilot::controllerCallback(uint64_t timeMicroseconds,
       // TODO: Ask: why the following if statement should be within lock_guard block?
       //   in our version, if the distance to waypoint is still greater than posTolerance,
       //   we just keep setting the same position as our reference. no harm done even if the mutex is not locked.
-      if(!waypoints_.empty() && !debugController) {
+      if(!waypoints_.empty() && startToGoal_) {
         setPoseReference(waypoints_[0].x,
                          waypoints_[0].y,
                          waypoints_[0].z,
                          waypoints_[0].yaw);
+      } else if(!waypoints_.empty() && goalToStart_) {
+        setPoseReference(waypoints_.back().x,
+                         waypoints_.back().y,
+                         waypoints_.back().z,
+                         waypoints_.back().yaw);
       }
       posRef << ref_x_, ref_y_ , ref_z_;
+      // std::cout << "position ref: " << ref_x_<<' '<< ref_y_ <<' ' << ref_z_ << '\n';
       Eigen::Vector3d posError = R_SW * (posRef - x.t_WS);
-      if (!waypoints_.empty() && !debugController) {
+      // std::cout << "pos. error: " << posError.norm() << '\n';
+      if (!waypoints_.empty()) {
         std::lock_guard<std::mutex> l(waypointMutex_);
-        if (posError.squaredNorm() < waypoints_[0].posTolerance) {
+        if (startToGoal_ && posError.norm() < waypoints_[0].posTolerance) {
           waypoints_.pop_front();
+          //lastPosTolerance_ = waypoints_[0].posTolerance;
+        } else if (goalToStart_ && posError.norm() < waypoints_.back().posTolerance) {
+          waypoints_.pop_back();
+          //lastPosTolerance_ = waypoints_.back().posTolerance;
         }
       }
+      if (waypoints_.empty()) {
+        std::lock_guard<std::mutex> l(waypointMutex_);
+        //if (posError.norm() <lastPosTolerance_) {
+          m_objectReached = true;
+        //}
+      }
+      //std::cout << "Waypoints empty: " << waypoints_.empty() << '\n';
+      //std::cout << "last pos. tolerance: " << lastPosTolerance_ << '\n';
+      //std::cout << "Object reached: " << m_objectReached << '\n';
       double yawError = (ref_yaw_ - yaw);
       // Ensure yawError \in [-pi,pi]
       yawError = std::fmod(yawError + M_PI , 2*M_PI);

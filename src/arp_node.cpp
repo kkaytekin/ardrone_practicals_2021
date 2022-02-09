@@ -221,6 +221,9 @@ to delete[] in the end!
   float rotateLeft{0};
   std::string droneStatusString;
 
+  static std::deque<arp::Autopilot::Waypoint> waypoints;
+  std::mutex statusMutex;
+
   while (ros::ok()) {
     ros::spinOnce();
     ros::Duration dur(0.04);
@@ -259,8 +262,8 @@ to delete[] in the end!
 
     //debug commands
     //autopilot.printRefVals();
-    std::cout << "Current pos. est. x,y,z: " << autopilot.currentRobotState.x() << ' '
-              << autopilot.currentRobotState.y() << ' '<< autopilot.currentRobotState.z() << '\n';
+    //std::cout << "Current pos. est. x,y,z: " << autopilot.currentRobotState.x() << ' '
+    //          << autopilot.currentRobotState.y() << ' '<< autopilot.currentRobotState.z() << '\n';
 
     // render image, if there is a new one available
     if(visualInertialTracker.getLastVisualisationImage(originalImage)) {  // subscriber.getLastImage(originalImage
@@ -420,12 +423,12 @@ to delete[] in the end!
       );
       std::cout << "Planner initialized\n";
       // do A* search
-      std::deque<arp::Autopilot::Waypoint> waypoints;
       double distance = planner.aStar(&waypoints);
       std::cout << "Planning done - distance to fly: " << distance << std::endl;
       // set the flyPath if the planner found a path
       if (distance != -1) {
         autopilot.flyPath(waypoints);
+        autopilot.setStartToGoal(true);
       }
     }
 
@@ -494,7 +497,42 @@ to delete[] in the end!
       }
     }
     else if (autopilot.isAutomatic()) {
+      // While flying, if done; land
+      if ((droneStatus == 3 || droneStatus == 4 || droneStatus == 7) && autopilot.m_objectReached) {
+        std::cout << "Object reached! Landing...    " << (autopilot.land() ? "[OK]\n" : "[FAIL]\n");
+        // Wait 2 seconds
+        //sleep(2000);
+      }
+      // While inited or landed, if on a mission; takeoff
+      if (droneStatus == 1 || droneStatus == 2 && !autopilot.m_objectReached) {
+        if (autopilot.getStartToGoal() || autopilot.getGoalToStart())
+          std::cout << "On mission: " <<  (autopilot.getStartToGoal() ? "Start to goal\n":"Goal to start\n")
+          << "Taking off...   " << (autopilot.takeoff() ? "[OK]\n" : "[FAIL]\n");
+      }
+      // If object is reached and the drone is landed; either start the return task or return to manual mode
+      if (droneStatus == 2  && autopilot.m_objectReached) {
+        // If reached to goal; set the same fly path again and begin return task.
+        if (autopilot.getStartToGoal() && !autopilot.getGoalToStart()) {
+          // std::lock_guard<std::mutex> l(statusMutex);
+          autopilot.setStartToGoal(false);
+          autopilot.setGoalToStart(true);
+          // Push the same flypath which were calculated when we pressed 'P'
+          autopilot.flyPath(waypoints);
+          std::cout << "Starting the return task\n";
+          autopilot.m_objectReached = false;
 
+        }
+        // If returned successfully from goal to start, return to manual mode.
+      if (autopilot.getGoalToStart() && !autopilot.getStartToGoal()) {
+          if (autopilot.m_objectReached) {
+            // std::lock_guard<std::mutex> l(statusMutex);
+            autopilot.setGoalToStart(false);
+            autopilot.setFlightChallenge(false);
+            autopilot.setManual();
+            std::cout << "Drone navigation set to manual..." << std::endl;
+          }
+        } else std::cout << "Error! goaltoStart and startToGoal cannot be both true / both false\n";
+      }
     }
   }
 

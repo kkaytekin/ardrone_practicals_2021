@@ -156,6 +156,28 @@ class Autopilot {
     flightChallenge_ = status;
   }
 
+  /// \brief Status: drone is in the first half of the task.
+  void setStartToGoal(const bool& status) {
+    std::lock_guard<std::mutex> l(waypointMutex_);
+    startToGoal_ = status;
+  }
+  /// \brief Status: drone is in the first half of the task.
+  void setGoalToStart(const bool& status) {
+    std::lock_guard<std::mutex> l(waypointMutex_);
+    goalToStart_ = status;
+  }
+
+  /// \brief Status: drone is in the first half of the task.
+  bool getStartToGoal() {
+    return startToGoal_;
+  }
+  /// \brief Status: drone is in the first half of the task.
+  bool getGoalToStart() {
+    return goalToStart_;
+  }
+
+
+  bool m_objectReached = false;
   // DEbug
   Eigen::Vector3d currentRobotState{0.0,0.0,0.0};
 
@@ -204,7 +226,10 @@ class Autopilot {
   std::deque<Waypoint> waypoints_;  ///< A list of waypoints that will be approached, if not empty.
   std::mutex waypointMutex_;  ///< We need to lock the waypoint access due to asynchronous arrival.
 
+  double lastPosTolerance_ = std::numeric_limits<double>::max();
   bool flightChallenge_ = false;
+  bool startToGoal_ = false;
+  bool goalToStart_ = false;
 };
 
 } // namespace arp
