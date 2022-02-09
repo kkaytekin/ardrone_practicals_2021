@@ -116,7 +116,7 @@ namespace arp {
           coordinates.y,
           coordinates.z,
           0,   // yaw angle
-          0.4  // tolerance
+          1  // tolerance
         };
         waypoints->push_front(waypoint);
         current = current->previous;

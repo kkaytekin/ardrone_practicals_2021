@@ -225,9 +225,10 @@ to delete[] in the end!
   std::mutex statusMutex;
   // HACK: allow the drone to land by skipping this many iterations:
   int SKIP_ITERS = 200;
-  int count_to_skip{0};
+  int count_to_takeoff{0};
+  int count_to_land{0};
   static int n_P_calls{0};
-  static int OCCUPANCY_CRITERION = -4;
+  static int OCCUPANCY_CRITERION = -7;
 
   while (ros::ok()) {
     ros::spinOnce();
@@ -267,8 +268,8 @@ to delete[] in the end!
 
     //debug commands
     //autopilot.printRefVals();
-     //std::cout << "Current pos. est. x,y,z: " << autopilot.currentRobotState.x() << ' '
-      //        << autopilot.currentRobotState.y() << ' '<< autopilot.currentRobotState.z() << '\n';
+     std::cout << "Current pos. est. x,y,z: " << autopilot.currentRobotState.x() << ' '
+              << autopilot.currentRobotState.y() << ' '<< autopilot.currentRobotState.z() << '\n';
 
     // render image, if there is a new one available
     if(visualInertialTracker.getLastVisualisationImage(originalImage)) {  // subscriber.getLastImage(originalImage
@@ -427,13 +428,12 @@ to delete[] in the end!
                 autopilot.currentRobotState.x(), autopilot.currentRobotState.y(), 0.7
         );
         planner.checkOccupy = OCCUPANCY_CRITERION;
-        std::cout << "Planner checkOccup: " << planner.checkOccupy << '\n';
         std::cout << "Planner initialized\n";
         // do A* search
         double distance = planner.aStar(&waypoints);
         std::cout << "Planning done - distance to fly: " << distance << std::endl;
         // set the flyPath if the planner found a path
-        if (distance == -1 ) {
+        if (distance == -1) {
           std::lock_guard<std::mutex> l(statusMutex);
           OCCUPANCY_CRITERION+= 1;
           if (OCCUPANCY_CRITERION >= 0) OCCUPANCY_CRITERION = 0;
@@ -567,15 +567,21 @@ to delete[] in the end!
     else if (autopilot.isAutomatic()) {
       // While flying, if done; land
       if ((droneStatus == 3 || droneStatus == 4 || droneStatus == 7) && autopilot.m_objectReached) {
-        std::cout << "Object reached! Landing...    " << (autopilot.land() ? "[OK]\n" : "[FAIL]\n");
-        count_to_skip = 0;
+        std::cout << "Object reached! \n";
+        if (count_to_land < SKIP_ITERS/2)
+          count_to_land++;
+          else {
+            std::cout << "Landing...    " << (autopilot.land() ? "[OK]\n" : "[FAIL]\n");
+            count_to_land = 0;
+          }
+        count_to_takeoff = 0;
         // Wait 2 seconds
         //sleep(2000);
       }
       // While inited or landed, if on a mission; takeoff
       if (droneStatus == 1 || droneStatus == 2 && !autopilot.m_objectReached) {
-        if (count_to_skip < SKIP_ITERS) {
-          ++count_to_skip;
+        if (count_to_takeoff < SKIP_ITERS) {
+          ++count_to_takeoff;
           continue;
         }
         if (autopilot.getStartToGoal() || autopilot.getGoalToStart())

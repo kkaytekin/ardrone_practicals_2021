@@ -213,7 +213,7 @@ void Autopilot::controllerCallback(uint64_t timeMicroseconds,
         if (waypoints_.size() < 2)
           setPoseReference(waypoints_[0].x,
                          waypoints_[0].y,
-                         0.7,
+                         0.3,
                          atan2(waypoints_[0].y, waypoints_[0].x));
         else
           setPoseReference(waypoints_[0].x,
@@ -224,7 +224,7 @@ void Autopilot::controllerCallback(uint64_t timeMicroseconds,
         if (waypoints_.size() < 2)
           setPoseReference(waypoints_.back().x,
                          waypoints_.back().y,
-                         0.7,
+                         0.3,
                          atan2(-waypoints_.back().y, waypoints_.back().x));
         else
           setPoseReference(waypoints_.back().x,
