@@ -268,8 +268,8 @@ to delete[] in the end!
 
     //debug commands
     //autopilot.printRefVals();
-     std::cout << "Current pos. est. x,y,z: " << autopilot.currentRobotState.x() << ' '
-              << autopilot.currentRobotState.y() << ' '<< autopilot.currentRobotState.z() << '\n';
+    //std::cout << "Current pos. est. x,y,z: " << autopilot.currentRobotState.x() << ' '
+    //          << autopilot.currentRobotState.y() << ' '<< autopilot.currentRobotState.z() << '\n';
 
     // render image, if there is a new one available
     if(visualInertialTracker.getLastVisualisationImage(originalImage)) {  // subscriber.getLastImage(originalImage
@@ -421,17 +421,17 @@ to delete[] in the end!
     if (state[SDL_SCANCODE_P]) {
       // if calling for the first time, we generate the full fly path
       if (n_P_calls == 0) {
-        std::cout << "Drone navigation set to challenge..." << std::endl;
+        //std::cout << "Drone navigation set to challenge..." << std::endl;
         // Initialize planner
         arp::Planner planner(
                 wrappedMapData, goalPos[0], goalPos[1], goalPos[2],
                 autopilot.currentRobotState.x(), autopilot.currentRobotState.y(), 0.7
         );
         planner.checkOccupy = OCCUPANCY_CRITERION;
-        std::cout << "Planner initialized\n";
+        // std::cout << "Planner initialized\n";
         // do A* search
         double distance = planner.aStar(&waypoints);
-        std::cout << "Planning done - distance to fly: " << distance << std::endl;
+        // std::cout << "Planning done - distance to fly: " << distance << std::endl;
         // set the flyPath if the planner found a path
         if (distance == -1) {
           std::lock_guard<std::mutex> l(statusMutex);
@@ -439,6 +439,7 @@ to delete[] in the end!
           if (OCCUPANCY_CRITERION >= 0) OCCUPANCY_CRITERION = 0;
         }
         if (distance != -1) {
+          std::cout << "Planning successful.\n";
           autopilot.flyPath(waypoints);
           autopilot.setAutomatic();
           autopilot.setFlightChallenge(true);
@@ -448,17 +449,17 @@ to delete[] in the end!
       }
       // If we are on our way to goal; generate a fly path towards the goal
       else if (autopilot.getStartToGoal()) {
-        std::cout << "Drone navigation set to challenge..." << std::endl;
+        //std::cout << "Drone navigation set to challenge..." << std::endl;
         // Initialize planner
         arp::Planner planner(
                 wrappedMapData, goalPos[0], goalPos[1], goalPos[2],
                 autopilot.currentRobotState.x(), autopilot.currentRobotState.y(), autopilot.currentRobotState.z()
         );
         planner.checkOccupy = OCCUPANCY_CRITERION;
-        std::cout << "Planner initialized\n";
+        //std::cout << "Planner initialized\n";
         // do A* search
         double distance = planner.aStar(&waypoints);
-        std::cout << "Planning done - distance to fly: " << distance << std::endl;
+        // std::cout << "Planning done - distance to fly: " << distance << std::endl;
         // set the flyPath if the planner found a path
         if (distance == -1 ) {
           std::lock_guard<std::mutex> l(statusMutex);
@@ -474,17 +475,17 @@ to delete[] in the end!
     }
       // If we are on our way back; goal is the origin
       else if (autopilot.getGoalToStart()) {
-        std::cout << "Drone navigation set to challenge..." << std::endl;
+        //std::cout << "Drone navigation set to challenge..." << std::endl;
         // Initialize planner
         arp::Planner planner(
-                wrappedMapData, 0.0, 0.0, 2.0,
+                wrappedMapData, 0.0, 0.0, 0.5,
                 autopilot.currentRobotState.x(), autopilot.currentRobotState.y(), autopilot.currentRobotState.z()
         );
         planner.checkOccupy = OCCUPANCY_CRITERION;
-        std::cout << "Planner initialized\n";
+        //std::cout << "Planner initialized\n";
         // do A* search
         double distance = planner.aStar(&waypoints);
-        std::cout << "Planning done - distance to fly: " << distance << std::endl;
+        // std::cout << "Planning done - distance to fly: " << distance << std::endl;
         // set the flyPath if the planner found a path
         if (distance == -1 ) {
           std::lock_guard<std::mutex> l(statusMutex);

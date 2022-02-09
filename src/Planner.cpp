@@ -25,7 +25,7 @@ namespace arp {
   {
     // return -1 if goal occupied
     if (isOccupied(goal_.idx.x, goal_.idx.y, goal_.idx.z)) {
-      std::cout << "Goal is in occupied space!" << std::endl;
+      //std::cout << "Goal is in occupied space!" << std::endl;
       return -1;
     }
 
