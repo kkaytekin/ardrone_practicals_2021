@@ -32,7 +32,7 @@ namespace arp {
     bool foundGoal = false;
     double distance;
     std::set<Planner::Vertex> openSet;
-    std::vector<Planner::Vertex> vertices(100000);
+    std::vector<Planner::Vertex> vertices(10000000);
     start_.distance = 0;
     int size[3] = {wrappedMapData_->size[0], wrappedMapData_->size[1], wrappedMapData_->size[2]};
     cv::Mat distanceMatrix(3, size, CV_64F, std::numeric_limits<double>::infinity());

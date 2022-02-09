@@ -266,8 +266,8 @@ to delete[] in the end!
 
     //debug commands
     //autopilot.printRefVals();
-    // std::cout << "Current pos. est. x,y,z: " << autopilot.currentRobotState.x() << ' '
-    //          << autopilot.currentRobotState.y() << ' '<< autopilot.currentRobotState.z() << '\n';
+     //std::cout << "Current pos. est. x,y,z: " << autopilot.currentRobotState.x() << ' '
+      //        << autopilot.currentRobotState.y() << ' '<< autopilot.currentRobotState.z() << '\n';
 
     // render image, if there is a new one available
     if(visualInertialTracker.getLastVisualisationImage(originalImage)) {  // subscriber.getLastImage(originalImage
@@ -461,7 +461,7 @@ to delete[] in the end!
         std::cout << "Drone navigation set to challenge..." << std::endl;
         // Initialize planner
         arp::Planner planner(
-                wrappedMapData, 0.0, 0.0, 0.7,
+                wrappedMapData, 0.0, 0.0, 2.0,
                 autopilot.currentRobotState.x(), autopilot.currentRobotState.y(), autopilot.currentRobotState.z()
         );
         std::cout << "Planner initialized\n";

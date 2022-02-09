@@ -31,9 +31,9 @@ Autopilot::Autopilot(ros::NodeHandle& nh)
 
   // Set PID parameters
   PidController::Parameters p;
-  p.k_p=0.5; p.k_i=0.05; p.k_d=0.1;
+  p.k_p=0.2; p.k_i=3.0; p.k_d=0.0;
   rollAngPid.setParameters(p);
-  p.k_p=0.5; p.k_i=0.05; p.k_d=0.1;
+  p.k_p=0.2; p.k_i=3.0; p.k_d=0.0;
   pitchAngPid.setParameters(p);
   p.k_p=0.8; p.k_i=0.1; p.k_d=0.2;
   yawPid.setParameters(p);
@@ -210,15 +210,27 @@ void Autopilot::controllerCallback(uint64_t timeMicroseconds,
       //   in our version, if the distance to waypoint is still greater than posTolerance,
       //   we just keep setting the same position as our reference. no harm done even if the mutex is not locked.
       if(!waypoints_.empty() && startToGoal_) {
-        setPoseReference(waypoints_[0].x,
+        if (waypoints_.size() < 2)
+          setPoseReference(waypoints_[0].x,
                          waypoints_[0].y,
-                         waypoints_[0].z,
+                         0.7,
                          atan2(waypoints_[0].y, waypoints_[0].x));
+        else
+          setPoseReference(waypoints_[0].x,
+                           waypoints_[0].y,
+                           1.7,
+                           atan2(waypoints_[0].y, waypoints_[0].x));
       } else if(!waypoints_.empty() && goalToStart_) {
-        setPoseReference(waypoints_.back().x,
+        if (waypoints_.size() < 2)
+          setPoseReference(waypoints_.back().x,
                          waypoints_.back().y,
-                         waypoints_.back().z,
-                         atan2(waypoints_.back().y, waypoints_.back().x));
+                         0.7,
+                         atan2(-waypoints_.back().y, waypoints_.back().x));
+        else
+          setPoseReference(waypoints_.back().x,
+                           waypoints_.back().y,
+                           1.7,
+                           atan2(-waypoints_.back().y, waypoints_.back().x));
       }
       posRef << ref_x_, ref_y_ , ref_z_;
       // std::cout << "position ref: " << ref_x_<<' '<< ref_y_ <<' ' << ref_z_ << '\n';
