@@ -227,6 +227,7 @@ to delete[] in the end!
   int SKIP_ITERS = 200;
   int count_to_skip{0};
   static int n_P_calls{0};
+  static int OCCUPANCY_CRITERION = -4;
 
   while (ros::ok()) {
     ros::spinOnce();
@@ -425,16 +426,24 @@ to delete[] in the end!
                 wrappedMapData, goalPos[0], goalPos[1], goalPos[2],
                 autopilot.currentRobotState.x(), autopilot.currentRobotState.y(), 0.7
         );
+        planner.checkOccupy = OCCUPANCY_CRITERION;
+        std::cout << "Planner checkOccup: " << planner.checkOccupy << '\n';
         std::cout << "Planner initialized\n";
         // do A* search
         double distance = planner.aStar(&waypoints);
         std::cout << "Planning done - distance to fly: " << distance << std::endl;
         // set the flyPath if the planner found a path
+        if (distance == -1 ) {
+          std::lock_guard<std::mutex> l(statusMutex);
+          OCCUPANCY_CRITERION+= 1;
+          if (OCCUPANCY_CRITERION >= 0) OCCUPANCY_CRITERION = 0;
+        }
         if (distance != -1) {
           autopilot.flyPath(waypoints);
           autopilot.setAutomatic();
           autopilot.setFlightChallenge(true);
           autopilot.setStartToGoal(true);
+          n_P_calls += 1;
         }
       }
       // If we are on our way to goal; generate a fly path towards the goal
@@ -445,15 +454,22 @@ to delete[] in the end!
                 wrappedMapData, goalPos[0], goalPos[1], goalPos[2],
                 autopilot.currentRobotState.x(), autopilot.currentRobotState.y(), autopilot.currentRobotState.z()
         );
+        planner.checkOccupy = OCCUPANCY_CRITERION;
         std::cout << "Planner initialized\n";
         // do A* search
         double distance = planner.aStar(&waypoints);
         std::cout << "Planning done - distance to fly: " << distance << std::endl;
         // set the flyPath if the planner found a path
+        if (distance == -1 ) {
+          std::lock_guard<std::mutex> l(statusMutex);
+          OCCUPANCY_CRITERION+= 1;
+          if (OCCUPANCY_CRITERION >= 0) OCCUPANCY_CRITERION = 0;
+        }
         if (distance != -1) {
           autopilot.flyPath(waypoints);
           autopilot.setAutomatic();
           autopilot.setFlightChallenge(true);
+          n_P_calls+=1;
       }
     }
       // If we are on our way back; goal is the origin
@@ -464,15 +480,22 @@ to delete[] in the end!
                 wrappedMapData, 0.0, 0.0, 2.0,
                 autopilot.currentRobotState.x(), autopilot.currentRobotState.y(), autopilot.currentRobotState.z()
         );
+        planner.checkOccupy = OCCUPANCY_CRITERION;
         std::cout << "Planner initialized\n";
         // do A* search
         double distance = planner.aStar(&waypoints);
         std::cout << "Planning done - distance to fly: " << distance << std::endl;
         // set the flyPath if the planner found a path
+        if (distance == -1 ) {
+          std::lock_guard<std::mutex> l(statusMutex);
+          OCCUPANCY_CRITERION+= 1;
+          if (OCCUPANCY_CRITERION >= 0) OCCUPANCY_CRITERION = 0;
+        }
         if (distance != -1) {
           autopilot.flyPath(waypoints);
           autopilot.setAutomatic();
           autopilot.setFlightChallenge(true);
+          n_P_calls += 1;
         }
       }
     }

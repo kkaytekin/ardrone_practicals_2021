@@ -35,7 +35,7 @@ Autopilot::Autopilot(ros::NodeHandle& nh)
   rollAngPid.setParameters(p);
   p.k_p=0.2; p.k_i=3.0; p.k_d=0.05;
   pitchAngPid.setParameters(p);
-  p.k_p=0.04; p.k_i=0.005; p.k_d=0.0;
+  p.k_p=0.06; p.k_i=0.01; p.k_d=0.0;
   yawPid.setParameters(p);
   p.k_p=0.5; p.k_i=0.2; p.k_d=0.1;
   zPid.setParameters(p);
@@ -218,7 +218,7 @@ void Autopilot::controllerCallback(uint64_t timeMicroseconds,
         else
           setPoseReference(waypoints_[0].x,
                            waypoints_[0].y,
-                           1.7,
+                           1.9,
                            atan2(waypoints_[0].y, waypoints_[0].x));
       } else if(!waypoints_.empty() && goalToStart_) {
         if (waypoints_.size() < 2)
@@ -229,7 +229,7 @@ void Autopilot::controllerCallback(uint64_t timeMicroseconds,
         else
           setPoseReference(waypoints_.back().x,
                            waypoints_.back().y,
-                           1.7,
+                           1.9,
                            atan2(-waypoints_.back().y, waypoints_.back().x));
       }
       posRef << ref_x_, ref_y_ , ref_z_;

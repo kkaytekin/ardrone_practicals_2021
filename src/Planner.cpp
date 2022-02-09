@@ -158,7 +158,7 @@ namespace arp {
 
   // Inputs: i,j,k: Indices of a position
   bool Planner::isOccupied(const int& i, const int& j, const int& k) {
-    if ((int)wrappedMapData_->at<char>(i,j,k) < 0 && (int)wrappedMapData_->at<char>(i,j,k) > -128)
+    if ((int)wrappedMapData_->at<char>(i,j,k) < checkOccupy && (int)wrappedMapData_->at<char>(i,j,k) > -128)
       return false;
     else
       return true;

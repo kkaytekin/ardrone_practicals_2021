@@ -60,6 +60,7 @@ class Planner
     {0, 0, +1}
   };
 
+  int checkOccupy = -4;
  protected:
   cv::Mat* wrappedMapData_;
   Vertex start_;
