@@ -213,12 +213,12 @@ void Autopilot::controllerCallback(uint64_t timeMicroseconds,
         setPoseReference(waypoints_[0].x,
                          waypoints_[0].y,
                          waypoints_[0].z,
-                         waypoints_[0].yaw);
+                         atan2(waypoints_[0].y, waypoints_[0].x));
       } else if(!waypoints_.empty() && goalToStart_) {
         setPoseReference(waypoints_.back().x,
                          waypoints_.back().y,
                          waypoints_.back().z,
-                         waypoints_.back().yaw);
+                         atan2(waypoints_.back().y, waypoints_.back().x));
       }
       posRef << ref_x_, ref_y_ , ref_z_;
       // std::cout << "position ref: " << ref_x_<<' '<< ref_y_ <<' ' << ref_z_ << '\n';

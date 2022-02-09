@@ -226,6 +226,7 @@ to delete[] in the end!
   // HACK: allow the drone to land by skipping this many iterations:
   int SKIP_ITERS = 200;
   int count_to_skip{0};
+  static int n_P_calls{0};
 
   while (ros::ok()) {
     ros::spinOnce();
@@ -265,7 +266,7 @@ to delete[] in the end!
 
     //debug commands
     //autopilot.printRefVals();
-    //std::cout << "Current pos. est. x,y,z: " << autopilot.currentRobotState.x() << ' '
+    // std::cout << "Current pos. est. x,y,z: " << autopilot.currentRobotState.x() << ' '
     //          << autopilot.currentRobotState.y() << ' '<< autopilot.currentRobotState.z() << '\n';
 
     // render image, if there is a new one available
@@ -416,22 +417,63 @@ to delete[] in the end!
     }
     // Fly Challenge Mode
     if (state[SDL_SCANCODE_P]) {
-      std::cout << "Drone navigation set to challenge..." << std::endl;
-      autopilot.setAutomatic();
-      autopilot.setFlightChallenge(true);
-      // Initialize planner
-      arp::Planner planner(
-        wrappedMapData, goalPos[0], goalPos[1], goalPos[2],
-        autopilot.currentRobotState.x(), autopilot.currentRobotState.y(), autopilot.currentRobotState.z()
-      );
-      std::cout << "Planner initialized\n";
-      // do A* search
-      double distance = planner.aStar(&waypoints);
-      std::cout << "Planning done - distance to fly: " << distance << std::endl;
-      // set the flyPath if the planner found a path
-      if (distance != -1) {
-        autopilot.flyPath(waypoints);
-        autopilot.setStartToGoal(true);
+      // if calling for the first time, we generate the full fly path
+      if (n_P_calls == 0) {
+        std::cout << "Drone navigation set to challenge..." << std::endl;
+        // Initialize planner
+        arp::Planner planner(
+                wrappedMapData, goalPos[0], goalPos[1], goalPos[2],
+                autopilot.currentRobotState.x(), autopilot.currentRobotState.y(), 0.7
+        );
+        std::cout << "Planner initialized\n";
+        // do A* search
+        double distance = planner.aStar(&waypoints);
+        std::cout << "Planning done - distance to fly: " << distance << std::endl;
+        // set the flyPath if the planner found a path
+        if (distance != -1) {
+          autopilot.flyPath(waypoints);
+          autopilot.setAutomatic();
+          autopilot.setFlightChallenge(true);
+          autopilot.setStartToGoal(true);
+        }
+      }
+      // If we are on our way to goal; generate a fly path towards the goal
+      else if (autopilot.getStartToGoal()) {
+        std::cout << "Drone navigation set to challenge..." << std::endl;
+        // Initialize planner
+        arp::Planner planner(
+                wrappedMapData, goalPos[0], goalPos[1], goalPos[2],
+                autopilot.currentRobotState.x(), autopilot.currentRobotState.y(), autopilot.currentRobotState.z()
+        );
+        std::cout << "Planner initialized\n";
+        // do A* search
+        double distance = planner.aStar(&waypoints);
+        std::cout << "Planning done - distance to fly: " << distance << std::endl;
+        // set the flyPath if the planner found a path
+        if (distance != -1) {
+          autopilot.flyPath(waypoints);
+          autopilot.setAutomatic();
+          autopilot.setFlightChallenge(true);
+      }
+    }
+      // If we are on our way back; goal is the origin
+      else if (autopilot.getGoalToStart()) {
+        std::cout << "Drone navigation set to challenge..." << std::endl;
+        // Initialize planner
+        arp::Planner planner(
+                wrappedMapData, 0.0, 0.0, 0.7,
+                autopilot.currentRobotState.x(), autopilot.currentRobotState.y(), autopilot.currentRobotState.z()
+        );
+        std::cout << "Planner initialized\n";
+        // do A* search
+        double distance = planner.aStar(&waypoints);
+        std::cout << "Planning done - distance to fly: " << distance << std::endl;
+        // set the flyPath if the planner found a path
+        if (distance != -1) {
+          autopilot.flyPath(waypoints);
+          autopilot.setAutomatic();
+          autopilot.setFlightChallenge(true);
+        }
       }
     }
 
@@ -528,9 +570,8 @@ to delete[] in the end!
           autopilot.flyPath(waypoints);
           std::cout << "Starting the return task\n";
           autopilot.m_objectReached = false;
-
         }
-        // If returned successfully from goal to start, return to manual mode.
+      // If returned successfully from goal to start, return to manual mode.
       if (autopilot.getGoalToStart() && !autopilot.getStartToGoal()) {
           if (autopilot.m_objectReached) {
             // std::lock_guard<std::mutex> l(statusMutex);
@@ -540,6 +581,8 @@ to delete[] in the end!
             std::cout << "Drone navigation set to manual..." << std::endl;
           }
         } else if (autopilot.getGoalToStart() && autopilot.getStartToGoal()) std::cout << "Error! goaltoStart and startToGoal cannot be both true / both false\n";
+      // If we broke Automatic middleway,
+
       }
     }
   }
