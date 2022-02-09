@@ -539,7 +539,7 @@ to delete[] in the end!
             autopilot.setManual();
             std::cout << "Drone navigation set to manual..." << std::endl;
           }
-        } else std::cout << "Error! goaltoStart and startToGoal cannot be both true / both false\n";
+        } else if (autopilot.getGoalToStart() && autopilot.getStartToGoal()) std::cout << "Error! goaltoStart and startToGoal cannot be both true / both false\n";
       }
     }
   }
