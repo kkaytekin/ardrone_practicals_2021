@@ -96,7 +96,7 @@ bool ViEkf::getState(uint64_t timestampMicroseconds,
       // assign output
       x = x_propagated_;
       if (P) {
-        *P = P_;  // Not 100% correct, we should have also propagated  P_...
+        *P = P_;
       }
       return false;
     }
@@ -130,7 +130,7 @@ bool ViEkf::getState(uint64_t timestampMicroseconds,
   // assign output
   x = x_propagated_;
   if (P) {
-    *P = P_;  // Not 100% correct, we should have also propagated  P_...
+    *P = P_;
   }
 
   // remember
